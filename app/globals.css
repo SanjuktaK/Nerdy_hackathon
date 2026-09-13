@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
+/*
+  Sensory defaults, applied globally.
+
+  The palette is set per-profile from the caregiver app (§8) and injected
+  as CSS variables on the app shell. The values below are the sage set, so
+  the page is never unstyled while a profile loads.
+
+  There is deliberately no `prefers-color-scheme` block. Sensory settings
+  are parent-controlled and previewed before they take effect; an OS theme
+  flipping the child's screen mid-session is the kind of unpredictability
+  the whole design is trying to remove.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #eef1ec;
+  --surface: #f7f9f5;
+  --ink: #28312a;
+  --ink-soft: #5b6860;
+  --line: #c9d3c6;
+  --accent: #6d8f77;
+  --accent-soft: #cfdcd2;
+  --accent-2: #a8896a;
+  --accent-2-soft: #e4d8c9;
+  --settled: #7d9a85;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Nothing in the child app animates unless the theme's motion level asks
+   for it, and an OS-level reduced-motion setting overrides even that. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+button {
+  font: inherit;
+}
+
+/* Focus has to be visible: many children here navigate by keyboard or switch. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

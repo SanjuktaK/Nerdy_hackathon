@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts tests/*.test.tsx",
+    "stems:seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/seed-stems.mts",
+    "stems:generate": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/generate-stems.mts",
+    "eval": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/eval.mts",
+    "check": "npm run typecheck && npm run test && npm run stems:seed",
+    "try:model": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/try-model.mts"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -15,12 +22,15 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "jsdom": "^25.0.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
