@@ -8,7 +8,7 @@ by necessity — no catalogue can cover every child's interests, which is
 exactly why every existing product is built for a median autistic child who
 does not exist.
 
-Implements [`architecture-v2.md`](../architecture-v2.md).
+Implements [`architecture-v2.md`](architecture-v2.md).
 
 ## Run it
 
@@ -36,6 +36,9 @@ npm run stems:seed       # rebuild lib/content/stems.json from the templates
 npm run stems:generate   # widen the bank with a model (needs a provider)
 npm run eval             # naive prompt vs constrained pipeline (needs a provider)
 npm run try:model        # one-shot check that the resolved provider works
+npm run llm:quantize     # download Qwen2.5-1.5B bf16, quantize to 4-bit with MLX
+npm run llm:serve        # serve it on http://localhost:8080
+npm run llm:bench        # bf16 vs 8-bit vs 4-bit vs optimized → eval/llm-bench.md
 ```
 
 `npm run try:model -- --interest "elevators" --target 62` prints every
@@ -132,7 +135,7 @@ a deterministic fallback, so `none` is a fully working configuration.
 
 ## Providers
 
-Resolution order: `ollama` → `hosted` → `none`. See `.env.example`.
+Resolution order: `mlx` → `ollama` → `hosted` → `none`. See `.env.example`.
 
 Set `OLLAMA_MODEL` to a model you actually have (`ollama list`) — the
 provider reports itself unavailable rather than failing at request time if
@@ -141,6 +144,44 @@ takes 13–16 s and two to three candidates survive the validator, which is
 enough, since the app serves the first one that passes. The architecture
 calls for a 3B (`llama3.2:3b`) and that is the better demo: faster, and
 better at holding a 14-word limit.
+
+### On-device: our own 4-bit Qwen (MLX)
+
+`npm run llm:quantize` downloads Qwen2.5-1.5B-Instruct in full precision and
+quantizes it on the Mac with MLX (3.1 GB → 0.87 GB, 4.5 bits per weight with
+group-wise scales). `npm run llm:serve` serves it OpenAI-style on :8080 and the
+`mlx` provider picks it up. The weights live in `.models/`, hidden and
+read-only, because macOS Storage's "Large Files" clean-up lists them otherwise.
+
+`npm run llm:bench` measures each rung on the app's real prompts and scores
+the output with the app's own validator. Apple M4, 16 GB, fastest of 3 runs:
+
+| Rung | Weights | Peak RAM | TTFT p50 | Decode tok/s | Request p50 | Speed-up | Stems accepted |
+|---|---|---|---|---|---|---|---|
+| bf16 | 3.09 GB | 3.40 GB | 897 ms | 25.0 | 5.97 s | 1.00× | 30/35 (86%) |
+| 8-bit | 1.64 GB | 2.18 GB | 1943 ms | 36.3 | 5.43 s | 1.10× | 33/35 (94%) |
+| 4-bit | 0.87 GB | 1.52 GB | 2053 ms | 65.0 | 3.91 s | 1.53× | 27/35 (77%) |
+| **4-bit + prefix cache** | 0.87 GB | 1.50 GB | 864 ms | 58.0 | **2.93 s** | **2.04×** | 27/35 (77%) |
+| 4-bit + speculative | 0.87 GB | 1.77 GB | 2602 ms | 55.7 | 4.86 s | 1.23× | 26/35 (74%) |
+
+What the numbers say:
+
+- **Quantization speeds up decoding, not prefill.** Generating tokens is
+  memory-bound, so 4-bit weights decode 2.6× faster than bf16. Reading the
+  prompt is compute-bound, and there the quantized matmuls are *slower*:
+  time to first token doubles.
+- **The prefix cache wins that back.** 388 of each prompt's tokens (system
+  prompt + chat template) are identical on every request. They are prefilled
+  once and the KV cache is trimmed back to them after each request, so only
+  the task-specific tail is read. The result is 2× end to end, inside the
+  architecture's 2–5 s budget. `mlx_lm.server` does the same with its LRU
+  prompt cache (`cached_tokens` in its responses).
+- **Speculative decoding was measured and rejected.** A 0.5B draft for a
+  1.5B target is too close in cost to pay for its misses here.
+- **Quality holds where it matters.** 4-bit accepts fewer candidates per
+  batch, but every 4-bit request still produced 2–5 valid stems on the first
+  attempt. bf16 produced none on one request and would have needed a retry.
+  The app serves the first stem that passes.
 
 With `none` resolved the caregiver app hides the free-text interest field
 and offers the eight seed interests instead — the app degrades to a
@@ -167,7 +208,7 @@ Deliberately absent: camera, microphone, affect inference, analytics SDKs,
 third-party identifiers. Affect detection for this population is immature
 and ethically fraught; not building it is a stated position.
 
-With the Ollama path, child data stays on-device end to end.
+With the MLX or Ollama path, child data stays on-device end to end.
 
 ## Eval
 

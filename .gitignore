@@ -43,3 +43,11 @@ next-env.d.ts
 
 # eval output — produced by npm run eval, never committed
 /eval/results.json
+
+# local LLM (MLX)
+/.venv-mlx/
+/.venv-tts/
+/.models/
+
+# python bytecode
+__pycache__/

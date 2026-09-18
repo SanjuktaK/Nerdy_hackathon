@@ -102,7 +102,7 @@ test("a novel interest and a slow model still start promptly", async () => {
     return { ok: false } as Response;
   };
 
-  const ChildApp = (await import("../app/page")).default;
+  const ChildApp = (await import("../app/classic/page")).default;
   const started = Date.now();
   const view = await mount(React.createElement(ChildApp));
 
@@ -128,7 +128,7 @@ test("a novel interest and a slow model still start promptly", async () => {
 });
 
 test("the child app reaches a clickable Start", async () => {
-  const ChildApp = (await import("../app/page")).default;
+  const ChildApp = (await import("../app/classic/page")).default;
   const view = await mount(React.createElement(ChildApp));
 
   const start = view.button("Start");
@@ -142,7 +142,7 @@ test("the child app reaches a clickable Start", async () => {
 });
 
 test("a full task runs: Start → walkthrough → together → alone", async () => {
-  const ChildApp = (await import("../app/page")).default;
+  const ChildApp = (await import("../app/classic/page")).default;
   const view = await mount(React.createElement(ChildApp));
 
   await view.click("Start");

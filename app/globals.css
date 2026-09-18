@@ -3,27 +3,39 @@
 /*
   Sensory defaults, applied globally.
 
-  The palette is set per-profile from the caregiver app (§8) and injected
-  as CSS variables on the app shell. The values below are the sage set, so
-  the page is never unstyled while a profile loads.
+  Warm and calm: a cream room, honey accents, and colour spent on the
+  things a child is meant to look at — the beads, the items, the character.
+  The chrome stays quiet.
 
   There is deliberately no `prefers-color-scheme` block. Sensory settings
-  are parent-controlled and previewed before they take effect; an OS theme
-  flipping the child's screen mid-session is the kind of unpredictability
-  the whole design is trying to remove.
+  are caregiver-controlled; an OS theme flipping the child's screen
+  mid-session is the kind of unpredictability the design is removing.
+  Monochrome is a caregiver choice, applied with `.mono`.
+
+  The classic (v1) app injects its own palette on its shell, so these
+  defaults only apply where it does not.
 */
 
 :root {
-  --bg: #eef1ec;
-  --surface: #f7f9f5;
-  --ink: #28312a;
-  --ink-soft: #5b6860;
-  --line: #c9d3c6;
-  --accent: #6d8f77;
-  --accent-soft: #cfdcd2;
+  --bg: #fbf6ec;
+  --surface: #ffffff;
+  --ink: #2b2118;
+  --ink-soft: #6b5d4f;
+  --line: #eadfcb;
+  --accent: #e0a526;
+  --accent-soft: #fbe7b5;
+  --accent-strong: #9a5a00;
   --accent-2: #a8896a;
   --accent-2-soft: #e4d8c9;
   --settled: #7d9a85;
+  --hot: #d9480f;
+  --rod: #b8946a;
+  --glow: #fff1c7;
+  --glow-strong: #f2b63d;
+  --shape: #ffd98a;
+  --shape-edge: #b87d12;
+  --sky: #fdf3dc;
+  --ground: #e9dcb8;
   color-scheme: light;
 }
 
@@ -31,20 +43,511 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   font-size: 18px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
-/* Nothing in the child app animates unless the theme's motion level asks
-   for it, and an OS-level reduced-motion setting overrides even that. */
+.font-display {
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  letter-spacing: 0.005em;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 4px solid #3b82c4;
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- the room ---------- */
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 50% 0%, var(--sky) 0%, transparent 70%),
+    linear-gradient(to top, color-mix(in srgb, var(--ground) 55%, transparent) 0, transparent 140px),
+    var(--bg);
+}
+
+
+.panel {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 0 1px 0 rgba(80, 60, 20, 0.04), 0 12px 32px -18px rgba(80, 60, 20, 0.25);
+}
+
+.bubble {
+  position: relative;
+  max-width: 22rem;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  padding: 0.7rem 1.1rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.item-tray {
+  background: color-mix(in srgb, var(--sky) 70%, white);
+  border: 2px dashed var(--line);
+  border-radius: 20px;
+  padding: 0.75rem;
+}
+
+.abacus-frame {
+  background: linear-gradient(#fffaf0, #f6ecd6);
+  border: 3px solid #d9c49c;
+  border-top-width: 12px;
+  border-bottom-width: 12px;
+  border-color: #c9a878;
+  border-radius: 22px;
+  padding: 0.5rem 1rem 1rem;
+}
+
+/* ---------- controls ---------- */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 56px;
+  padding: 0.6rem 1.8rem;
+  border-radius: 999px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 160ms ease;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--glow-strong);
+  color: #2b1a05;
+  box-shadow: 0 5px 0 #c98a1a;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 0 #c98a1a;
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #c98a1a;
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn-xl {
+  min-height: 76px;
+  padding: 0.8rem 3.5rem;
+  font-size: 2rem;
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--line);
+}
+.btn-secondary:hover {
+  border-color: var(--accent);
+}
+.btn-danger {
+  background: #fff;
+  color: #9b2c1f;
+  border: 2px solid #e2b3aa;
+}
+
+.step-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.step-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--glow);
+}
+.step-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.speak-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  color: var(--accent-strong);
+  background: var(--glow);
+  border: 2px solid var(--accent-soft);
+  cursor: pointer;
+}
+
+.choice {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 3px solid var(--line);
+  border-radius: 26px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1.1;
+  box-shadow: 0 4px 0 var(--line);
+  transition: transform 120ms ease, border-color 160ms ease, background 160ms ease, box-shadow 120ms ease;
+  cursor: pointer;
+}
+.choice:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.choice:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--line);
+}
+.choice:disabled {
+  cursor: default;
+}
+.choice-selected {
+  border-color: var(--accent-strong) !important;
+  background: var(--glow) !important;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--glow-strong) 45%, transparent);
+  animation: press 900ms ease-in-out infinite alternate;
+}
+.choice-tried {
+  opacity: 0.4;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.option:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.option-on {
+  border-color: var(--accent-strong);
+  background: var(--glow);
+  box-shadow: inset 0 0 0 1px var(--accent-strong);
+}
+.option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.q-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.field {
+  min-height: 56px;
+  padding: 0.6rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  font-size: 1.2rem;
+}
+.field:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.chip {
+  padding: 0.35rem 0.95rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.chip-on {
+  border-color: var(--accent-strong);
+  background: var(--glow);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.badge-model {
+  background: #eef0ff;
+  border-color: #c9cdf5;
+  color: #3e3f9a;
+}
+.badge-good {
+  background: #e8f5e6;
+  border-color: #bfdcb9;
+  color: #2f6a2a;
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 160ms ease;
+  cursor: pointer;
+}
+.switch span {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 160ms ease;
+}
+.switch-on {
+  background: var(--accent-strong);
+}
+.switch-on span {
+  transform: translateX(26px);
+}
+
+/* ---------- session chrome ---------- */
+
+.stone {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--line);
+  transition: all 300ms ease;
+}
+.stone-done {
+  background: var(--glow-strong);
+  border-color: #c98a1a;
+}
+.stone-now {
+  border-color: var(--accent-strong);
+  transform: scale(1.2);
+}
+
+.watch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: #2b2118;
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff6b4a;
+  animation: blink 1.4s ease-in-out infinite;
+}
+.demo-frame {
+  border-radius: 24px;
+  outline: 3px dashed var(--line);
+  outline-offset: 10px;
+  cursor: not-allowed;
+}
+.caption {
+  min-height: 2.6rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent-strong);
+}
+.hint {
+  padding: 0.6rem 1.2rem;
+  border-radius: 18px;
+  background: #eef4ff;
+  border: 2px solid #cfdcf5;
+  color: #243a66;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 10px;
+}
+.thinking-dots span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--glow-strong);
+  animation: dot 1.2s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.ai-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.src-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #b9ad9c;
+}
+.src-model {
+  background: #6366f1;
+}
+
+/* ---------- motion (all of it switched off by reduced-motion below) ---------- */
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.animate-wiggle {
+  animation: wiggle 700ms ease-in-out;
+  transform-origin: 50% 100%;
+}
+.animate-jump {
+  display: inline-block;
+  animation: jump 700ms cubic-bezier(0.3, 1.6, 0.5, 1) 2;
+}
+.confetti {
+  position: absolute;
+  top: -40px;
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+.glow-ring {
+  position: absolute;
+  top: 30px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 110, 0.55) 0%, transparent 70%);
+  animation: glow 1.8s ease-out forwards;
+}
+.creating {
+  animation: develop 2.6s ease-in-out infinite;
+}
+.reveal {
+  animation: reveal 900ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025, 1.015); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  25% { transform: rotate(-5deg) translateY(-6px); }
+  60% { transform: rotate(4deg) translateY(-3px); }
+}
+@keyframes jump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-26px) scale(1.04, 0.97); }
+}
+@keyframes fall {
+  0% { transform: translateY(0) rotate(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(420px) rotate(260deg); opacity: 0; }
+}
+@keyframes glow {
+  0% { transform: scale(0.4); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0.25; }
+}
+@keyframes develop {
+  0% { filter: blur(14px) grayscale(1); opacity: 0.4; }
+  50% { filter: blur(6px) grayscale(0.6); opacity: 0.8; }
+  100% { filter: blur(14px) grayscale(1); opacity: 0.4; }
+}
+@keyframes reveal {
+  0% { transform: scale(0.6); filter: blur(8px); opacity: 0; }
+  100% { transform: scale(1); filter: blur(0); opacity: 1; }
+}
+@keyframes press {
+  from { transform: translateY(0); }
+  to { transform: translateY(2px); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes dot {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-10px); opacity: 1; }
+}
+
+/* An OS-level reduced-motion setting overrides every animation above. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -55,17 +558,227 @@ body {
   }
 }
 
-button {
-  font: inherit;
+/* ---------- tap-to-count, skip, break, schedule ---------- */
+
+.count-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.count-item:hover {
+  background: var(--glow);
+}
+.count-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hot);
+  color: #fff;
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.skip-btn {
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.skip-btn:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.break-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 2px solid #cfdcf5;
+  background: #eef4ff;
+  color: #243a66;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+.schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.schedule-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 190px;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  background: var(--bg);
+}
+.schedule-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.schedule-arrow {
+  font-size: 2rem;
+  color: var(--ink-soft);
 }
 
-/* Focus has to be visible: many children here navigate by keyboard or switch. */
-:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 6px;
+/* Caregiver switched motion off: nothing moves, whatever the OS says. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+/* ---------- the living background ---------- */
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.app-root > *:not(.scene) {
+  position: relative;
+  z-index: 1;
+}
+.scene-drift {
+  animation: scene-drift 100s linear infinite;
+}
+.scene-sway {
+  animation: scene-sway 7s ease-in-out infinite;
+}
+.scene-float {
+  animation: scene-float 22s ease-in-out infinite;
+}
+.scene-rise {
+  animation: scene-rise 20s linear infinite;
+}
+.scene-twinkle {
+  animation: scene-twinkle 6s ease-in-out infinite;
+}
+.scene-breathe {
+  animation: scene-breathe 12s ease-in-out infinite;
+}
+.scene-still *,
+.reduce-motion .scene * {
+  animation-play-state: paused !important;
+}
+@keyframes scene-drift {
+  from { transform: translateX(-260px); }
+  to { transform: translateX(1700px); }
+}
+@keyframes scene-sway {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes scene-float {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(260px, -40px); }
+  50% { transform: translate(520px, 20px); }
+  75% { transform: translate(240px, 50px); }
+}
+@keyframes scene-rise {
+  from { transform: translateY(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  to { transform: translateY(-980px); opacity: 0; }
+}
+@keyframes scene-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+@keyframes scene-breathe {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.12; }
+}
+
+/* ---------- grown-up notes ---------- */
+
+.note-badge {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #3e3f9a;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.note-pop {
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  z-index: 30;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  box-shadow: 0 16px 40px -16px rgba(40, 30, 10, 0.35);
+}
+
+/* ---------- breathing break ---------- */
+
+.breathe {
+  display: grid;
+  place-items: center;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+  animation: breathe-circle 8s ease-in-out infinite;
+}
+.breathe-words {
+  position: relative;
+  height: 2.2rem;
+  width: 14rem;
+}
+.breathe-in,
+.breathe-out {
+  position: absolute;
+  inset: 0;
+  animation: breathe-word 8s ease-in-out infinite;
+}
+.breathe-out {
+  animation-delay: -4s;
+}
+@keyframes breathe-circle {
+  0%, 100% { transform: scale(0.82); }
+  50% { transform: scale(1.12); }
+}
+@keyframes breathe-word {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.note-pop-right {
+  left: auto;
+  right: 0;
 }

@@ -1,6 +1,6 @@
 import type { GeneratedStem, GenerationRequest } from "./validate";
 
-export type ProviderId = "ollama" | "hosted" | "none";
+export type ProviderId = "mlx" | "ollama" | "hosted" | "none";
 
 export interface CompletionRequest {
   system: string;

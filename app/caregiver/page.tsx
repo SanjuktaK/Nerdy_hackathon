@@ -106,7 +106,7 @@ export default function CaregiverApp() {
             </p>
           </div>
           <Link
-            href="/"
+            href="/classic"
             className="rounded-xl border-2 border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-2"
           >
             Open the child app

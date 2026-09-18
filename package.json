@@ -13,7 +13,11 @@
     "stems:generate": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/generate-stems.mts",
     "eval": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/eval.mts",
     "check": "npm run typecheck && npm run test && npm run stems:seed",
-    "try:model": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/try-model.mts"
+    "try:model": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/try-model.mts",
+    "llm:quantize": "bash scripts/mlx/quantize.sh",
+    "llm:serve": "bash scripts/mlx/serve.sh",
+    "llm:bench": "mkdir -p .models/bench && node --import tsx scripts/mlx/bench-prompts.mts > .models/bench/prompts.json && .venv-mlx/bin/python scripts/mlx/bench.py && node --import tsx scripts/mlx/score.mts",
+    "tts:serve": "bash scripts/tts/serve.sh"
   },
   "dependencies": {
     "next": "16.3.4",
