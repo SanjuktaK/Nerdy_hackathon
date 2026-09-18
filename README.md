@@ -1,6 +1,12 @@
-# Bead Frame
+# Tally Tales
 
-A manipulative-first maths engine for autistic K–5 learners.
+Maths stories for K–2, built first for autistic learners.
+
+A child meets a character built around the show they love, and every puzzle
+is a short story in that world: counting honey pots, adding train
+carriages, counting coins, reading a clock. The numbers and the answer check are
+deterministic code. The language model only writes the story, and every
+sentence it writes is validated before a child sees it.
 
 The diagnostic engine is deterministic by design — a child's next problem
 should not depend on a sampling temperature. The content engine is generative
@@ -8,7 +14,9 @@ by necessity — no catalogue can cover every child's interests, which is
 exactly why every existing product is built for a median autistic child who
 does not exist.
 
-Implements [`architecture-v2.md`](architecture-v2.md).
+Built for the Nerdy AI Hackathon (K–5 Math Game). Design:
+[`architecture-v2.md`](architecture-v2.md). Current state and open work:
+[`HANDOVER.md`](HANDOVER.md).
 
 ## Run it
 
@@ -17,35 +25,101 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-No model is required. The committed lesson bank covers every shipped skill,
-rung and seed interest, so a full session runs offline with zero model calls.
+No model is required. Every model call has a rules fallback, so the whole
+app runs offline with zero model calls.
 
 | Route | What it is |
 |---|---|
-| `/` | The child app — the session (§4) |
-| `/caregiver` | Profile, progress, flags, theme, export and delete (§12) |
-| `/eval` | Generation eval results, when a run exists (§10) |
-| `/preview` | Every screen at once, across palettes and CRA levels (dev tool) |
+| `/` | **Tally Tales**, the child app: onboarding, then story sessions |
+| `/grown-ups` | Caregiver page: notes, progress, sensory and voice settings, reset |
+| `/classic` | Bead Frame, the first version: bead-frame place value (see below) |
+| `/caregiver` | Caregiver app for Bead Frame |
+| `/eval` | Generation eval results, when a run exists |
+| `/preview` | Every Bead Frame screen at once (dev tool) |
+
+## How Tally Tales works
+
+**Onboarding asks the grown-up, not the child.** Name, age, grade, how much
+support the child usually needs, how they communicate, whether colour or
+sound is upsetting, and their favourite show as free text. The model turns
+that into a character; it chooses from bodies, colours and items the app can
+draw, and never draws anything itself.
+
+**The numbers never come from the model.** `lib/learn/generate.ts` builds each
+question from a seeded random generator, across K (counting, more and less,
+adding and taking away within 10, shapes), G1 (within 20, tens and ones, time)
+and G2 (within 1000 with carrying, place value, money, measuring). G3–G5 are
+listed in `lib/learn/curriculum.ts` but not built.
+
+**Wrong answers are diagnosed, not scored.** `lib/learn/diagnose.ts` names the
+mistake (off by one, digits swapped, forgot to carry, wrong operation, beads
+in the wrong column) and that name shapes the next question. An answer the
+rules cannot explain goes to the model for a guess that is shown only to the
+grown-up.
+
+**The model steers; the rules hold the wheel.** Before each question the model
+may suggest the skill and level (`planNext` in `lib/learn/ai.ts`).
+`guardPlan` in `lib/learn/policy.ts` clamps that suggestion to the child's
+grade band, and after a wrong answer the level can only stay or drop.
+`rulePlan` is a complete planner on its own and runs whenever the model is
+slow or absent.
+
+**Every model call has a budget and a fallback.** Character design, the next
+plan, the story line, the session review: each is parsed as JSON, validated
+field by field, and replaced by the rules answer on failure or timeout. A
+child never waits on the model past a fixed budget.
+
+**Sensory settings belong to the grown-up.** Monochrome mode with a choice of
+calm tone, reduced motion, a still or plain background, read-aloud
+(automatic, on tap, or off), volume, sound effects, voice style, session
+length, and four ways to mark a right answer, from a big cheer to a quiet
+tick. There is no "wrong" sound or animation in any of them.
+
+**Voices are made on the device.** `speak()` in `lib/learn/sound.ts` uses
+Kokoro-82M when `npm run tts:serve` is running, then the browser's own
+voice, then macOS `say`. Effects are synthesised with Web Audio; there are
+no audio files. Known gaps off a Mac and in Safari are listed in
+`HANDOVER.md`.
+
+```
+app/page.tsx, app/grown-ups/   child app and caregiver page
+app/api/learn/*                model calls: character, plan, premise, review, hypothesis
+app/api/speak/                 on-device voices
+components/learn/              scenes, questions, abacus, character, cheers
+lib/learn/                     curriculum, generator, diagnosis, planner, model calls, sound
+lib/ai/                        providers and validator, shared with Bead Frame
+```
 
 ## Commands
 
 ```bash
-npm run check            # typecheck + 84 tests + rebuild the lesson bank
+npm run check            # typecheck + tests + rebuild the Bead Frame lesson bank
 npm test                 # tests only
-npm run stems:seed       # rebuild lib/content/stems.json from the templates
-npm run stems:generate   # widen the bank with a model (needs a provider)
-npm run eval             # naive prompt vs constrained pipeline (needs a provider)
-npm run try:model        # one-shot check that the resolved provider works
+npm run tts:serve        # Kokoro voices on http://localhost:8091 (Apple silicon)
 npm run llm:quantize     # download Qwen2.5-1.5B bf16, quantize to 4-bit with MLX
 npm run llm:serve        # serve it on http://localhost:8080
 npm run llm:bench        # bf16 vs 8-bit vs 4-bit vs optimized → eval/llm-bench.md
+npm run try:model        # one-shot check that the resolved provider works
+npm run eval             # naive prompt vs constrained pipeline (needs a provider)
+npm run stems:seed       # rebuild lib/content/stems.json from the templates
+npm run stems:generate   # widen the bank with a model (needs a provider)
 ```
+
+For a production build use `npx next build --webpack`; the default Turbopack
+build needs Next's native binary, which is not installed on every machine.
 
 `npm run try:model -- --interest "elevators" --target 62` prints every
 candidate the model produced and, for each rejection, exactly which rule it
 broke. It is the fastest way to see whether a given model is usable.
 
-## Layers
+## Bead Frame (classic)
+
+The first version, still in the app at `/classic`. It implements
+[`architecture-v2.md`](architecture-v2.md) in full for two G1 skills, and is
+where the ideas above were first worked out: a named misconception taxonomy,
+a deterministic mastery policy, and fenced generation over a warm cache.
+
+### Layers
 
 ```
 app/                       L1  child app, caregiver app, /eval, API routes
@@ -72,7 +146,7 @@ lib/core/                  —   shared vocabulary, bead-frame and ten-frame dom
 Adding a band means adding a module to `lib/skills/` and one line in
 `lib/skills/registry.ts`. Nothing above L4 names a skill.
 
-## The parts that carry the argument
+### The parts that carry the argument
 
 **The misconception taxonomy** (`lib/skills/bead-common.ts`). A child who
 builds 34 as two tens and fourteen ones is marked wrong by every product on
@@ -183,11 +257,12 @@ What the numbers say:
   attempt. bf16 produced none on one request and would have needed a retry.
   The app serves the first stem that passes.
 
-With `none` resolved the caregiver app hides the free-text interest field
-and offers the eight seed interests instead — the app degrades to a
-catalogue rather than pretending a model is there.
+With `none` resolved the Bead Frame caregiver app hides the free-text
+interest field and offers the eight seed interests instead — the app
+degrades to a catalogue rather than pretending a model is there. Tally Tales
+falls back to its rules planner and built-in characters.
 
-## The lesson bank
+## The Bead Frame lesson bank
 
 `lib/content/stems.json` — 296 sentences across 2 skills × their rungs ×
 8 interests. Built deterministically from templates by `npm run stems:seed`,
@@ -211,6 +286,9 @@ and ethically fraught; not building it is a stated position.
 With the MLX or Ollama path, child data stays on-device end to end.
 
 ## Eval
+
+The eval covers Bead Frame's stem generation; extending it to Tally Tales'
+model calls is open work (see `HANDOVER.md`).
 
 `npm run eval` runs the naive prompt and the constrained pipeline over the
 same task space and writes `eval/results.json`, which `/eval` renders:
