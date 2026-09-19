@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local model weights, Python environments and caches: not our code.
+    ".venv-mlx/**",
+    ".venv-tts/**",
+    ".models/**",
+    ".cache/**",
   ]),
 ]);
 

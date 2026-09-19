@@ -1,28 +1,23 @@
-import type { GeneratedStem, GenerationRequest } from "./validate";
-
 export type ProviderId = "mlx" | "ollama" | "hosted" | "none";
 
 export interface CompletionRequest {
   system: string;
   user: string;
-  /** JSON schema. When present the provider must ask for JSON and validate shape. */
+  /** JSON schema, or any object to ask for JSON. The caller validates the shape regardless. */
   format?: object;
   maxTokens?: number;
   temperature?: number;
 }
 
 /**
- * §9.0 — Ollama runs on localhost. It does not exist on a deployed host.
- * This interface is what keeps the deployed build honest: every caller
- * programs against it, and `none` is a legal implementation.
+ * Every model call goes through this interface, and `none` is a legal
+ * implementation: with no model reachable, the app answers with its rules.
  */
 export interface LLMProvider {
   id: ProviderId;
-  /** Human-readable, shown in the caregiver app. */
+  /** Human-readable, shown on the grown-ups page. */
   label: string;
   available(): Promise<boolean>;
-  generate(req: GenerationRequest, count: number): Promise<GeneratedStem[]>;
-  /** Free text for surfaces B, C and D. */
   complete(req: CompletionRequest): Promise<string>;
 }
 
@@ -38,6 +33,4 @@ export interface ProviderStatus {
   label: string;
   available: boolean;
   model?: string;
-  /** False means the UI hides the free-text interest field (§9.0). */
-  canGenerate: boolean;
 }

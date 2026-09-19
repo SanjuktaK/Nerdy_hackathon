@@ -8,9 +8,6 @@
 
 import type { CompletionRequest, LLMProvider } from "../types";
 import { ProviderUnavailable } from "../types";
-import { STEM_BATCH_SCHEMA, type GeneratedStem, type GenerationRequest } from "../validate";
-import { STEM_SYSTEM, stemUserPrompt } from "../prompts";
-import { parseStemBatch } from "./ollama";
 
 const BASE = process.env.HOSTED_LLM_BASE_URL ?? "";
 const KEY = process.env.HOSTED_LLM_API_KEY ?? "";
@@ -63,15 +60,6 @@ export const hostedProvider: LLMProvider = {
     return configured();
   },
 
-  async generate(req: GenerationRequest, count: number): Promise<GeneratedStem[]> {
-    const raw = await chat({
-      system: STEM_SYSTEM,
-      user: stemUserPrompt(req, count),
-      format: STEM_BATCH_SCHEMA,
-      temperature: 0.8,
-    });
-    return parseStemBatch(raw);
-  },
 
   complete: chat,
 };

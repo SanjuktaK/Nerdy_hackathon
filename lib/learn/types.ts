@@ -65,11 +65,19 @@ export interface ChildProfile {
   /** Puzzles before the break: 3, 5 or 8. */
   sessionLength?: number;
   /** Who the friend sounds like. Unset: from its look (animals sound like a bear, others like a child). */
-  voiceStyle?: "child" | "bear" | "grownup";
+  voiceStyle?: "child" | "bear" | "cartoon" | "grownup";
   /** Master volume, 0–1. */
   volume?: number;
   /** Bead clicks, coin clinks, counting pops. Default on. */
   soundEffects?: boolean;
+  /** Offer a break when answers suggest things are getting hard. Off unless a grown-up turns it on: a popup mid-puzzle can itself distract. */
+  overloadCheck?: boolean;
+  /** Reading comfort: text size, extra spacing, an easy-to-read font. */
+  textSize?: "normal" | "large" | "xlarge";
+  wideSpacing?: boolean;
+  readableFont?: boolean;
+  /** skill → the IEP / therapy goal the grown-up is working towards. For the report. */
+  goals?: Partial<Record<SkillId, string>>;
   /** Show a "watch first" demo the first time a skill comes up. Default on. */
   showDemos?: boolean;
   /** Consent to let the app change difficulty and update the learner model. */
@@ -227,4 +235,6 @@ export interface SessionRecord {
   endedAt: number;
   attempts: Attempt[];
   plans: Plan[];
+  /** Breaks the app offered because things looked hard, and whether the child took them. */
+  offers?: { sign: "misses" | "rushing" | "tapping"; accepted: boolean; at: number }[];
 }

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Note } from "@/lib/learn/notes";
+import { updateLearn } from "@/lib/learn/store";
 
 export function GrownUpsLink({ notes, seen, align = "left" }: { notes: Note[]; seen: string[]; align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
@@ -36,6 +37,14 @@ export function GrownUpsLink({ notes, seen, align = "left" }: { notes: Note[]; s
               <li key={n.id}>
                 <p className="font-display text-lg font-semibold leading-tight">{n.title}</p>
                 <p className="text-sm text-[var(--ink-soft)]">{n.detail}</p>
+                {n.quote && <p className="mt-1 rounded-lg bg-[#eef0ff] px-2 py-1 text-sm text-[#3e3f9a]">“{n.quote}”</p>}
+                <button
+                  type="button"
+                  className="mt-1 text-sm font-semibold text-[var(--accent-strong)] underline underline-offset-2"
+                  onClick={() => updateLearn({ seenNotes: [...new Set([...seen, n.id])] })}
+                >
+                  Got it
+                </button>
               </li>
             ))}
           </ul>

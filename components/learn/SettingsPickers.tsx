@@ -65,10 +65,10 @@ export function ReadAloudPicker({ value, onChange }: { value: ReadAloud; onChang
   const [result, setResult] = useState<string>("");
   const test = async () => {
     setResult("Speaking…");
-    const path = await speak("Hello. I will read the puzzles to you.");
+    const path = await speak("Hello. I will read the puzzles to you.", { interrupt: true });
     setResult(
       path === "natural"
-        ? "Played with the natural on-device voice (Kokoro)."
+        ? "Played with the natural on-device voice (Qwen3-TTS)."
         : path === "browser"
         ? "Played with the browser's voice. For a natural voice, run: npm run tts:serve"
         : path === "mac"

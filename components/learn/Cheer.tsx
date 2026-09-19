@@ -25,8 +25,9 @@ export const CHEER_OPTIONS: { id: CheerStyle; title: string; blurb: string }[] =
   { id: "quiet", title: "Quiet tick", blurb: "A small tick mark. Nothing else." },
 ];
 
-export function playCheerSound(style: CheerStyle, soundSensitive: boolean) {
-  if (style === "woohoo") playWoohoo(soundSensitive);
+/** voiceOn: whether the spoken "Woo hoo!" may play (the read-aloud setting). */
+export function playCheerSound(style: CheerStyle, soundSensitive: boolean, voiceOn = true) {
+  if (style === "woohoo") playWoohoo(soundSensitive, voiceOn);
   else if (style === "chime") playChime(soundSensitive);
 }
 
@@ -35,15 +36,17 @@ export function Cheer({
   character,
   soundSensitive,
   line,
+  voiceOn = true,
 }: {
   style: CheerStyle;
   character: Character;
   soundSensitive: boolean;
   line: string;
+  voiceOn?: boolean;
 }) {
   useEffect(() => {
-    playCheerSound(style, soundSensitive);
-  }, [style, soundSensitive]);
+    playCheerSound(style, soundSensitive, voiceOn);
+  }, [style, soundSensitive, voiceOn]);
 
   const drops = useMemo(
     () =>

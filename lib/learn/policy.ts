@@ -4,16 +4,15 @@
 // Two jobs:
 //   1. rulePlan — a complete, deterministic planner. It is what runs when
 //      no model is reachable, and it is good enough to demo on its own.
-//   2. guardPlan — the fence around the model. Whatever the model proposes
-//      is clamped to the child's band, and after a wrong answer the level
-//      can only go down or stay. The model steers; it cannot drive off the road.
+//   2. planOptions — the menu the model chooses the next question from.
+//      Only safe steps are on it: nothing harder straight after a miss, at
+//      most one level up, and review only after a slip. The model steers;
+//      it cannot drive off the road.
 // ============================================================
 
-import { PREREQUISITE, REP_LABEL, REP_LADDER, allowedSkills, clampLevel, gradeInfo, isSkill } from "./curriculum";
+import { PREREQUISITE, REP_LABEL, REP_LADDER, clampLevel, gradeInfo } from "./curriculum";
 import { MISTAKE_TEXT } from "./diagnose";
 import type { Attempt, ChildProfile, LearnerModel, Level, Plan, Rep, SkillId } from "./types";
-
-export const QUESTIONS_PER_SESSION = 5;
 
 /** Two first-try answers in a row at this level or above → the next skill. */
 export const MOVE_ON_LEVEL = 4;
@@ -138,55 +137,6 @@ export function rulePlan(
     reason: twoRight ? "Two right in a row: one level harder." : "Right once: same level to confirm.",
   };
 }
-
-/**
- * Accept what the model proposed only inside the rules' limits.
- * Returns the model's plan (with source "model") or the rules' plan.
- */
-export function guardPlan(
-  proposed: { skill?: unknown; level?: unknown; focus?: unknown },
-  profile: ChildProfile,
-  history: Attempt[],
-  fallback: Plan
-): Plan {
-  if (!profile.adaptConsent) return fallback;
-  const allowed = allowedSkills(profile.grade);
-  if (!isSkill(proposed.skill) || !allowed.includes(proposed.skill)) return fallback;
-  // A skill from the band below is review, and review is earned by a slip:
-  // a 2nd-grader who is doing fine stays on 2nd-grade work.
-  const band = gradeInfo(profile.grade).skills;
-  const last = history[history.length - 1];
-  if (!band.includes(proposed.skill) && !(last && (!last.correct || last.tries > 1))) return fallback;
-  const lvlNum = Number(proposed.level);
-  if (!Number.isFinite(lvlNum)) return fallback;
-  let level = clampLevel(lvlNum);
-
-  if (last && !last.correct && proposed.skill === last.skill && level >= last.level) {
-    // The one rule the model may not break: after a miss on a skill, the
-    // next question on that skill is easier — not harder, and not the same.
-    level = clampLevel(last.level - 1);
-  }
-  if (last && last.correct && proposed.skill === last.skill && level > last.level + (last.tries > 1 ? 0 : 1)) {
-    level = clampLevel(last.level + (last.tries > 1 ? 0 : 1));
-  }
-  // The mirror rule: a child who is succeeding is never held back. When the
-  // rules say "harder" or "move on", the model may add detail but not undo it.
-  // After a first-try success the rules own the skill, and the level can
-  // only be the rules' level or one step above the last question.
-  if (last && last.correct && last.tries === 1) {
-    const skill = fallback.skill;
-    const cap = skill === last.skill ? last.level + 1 : fallback.level;
-    const lvl = proposed.skill === skill ? Math.min(Math.max(level, fallback.level), cap) : fallback.level;
-    return { ...fallback, level: clampLevel(lvl), focus: pickFocus(proposed.focus, fallback.focus), source: "model", reason: "Model within the rules' progression." };
-  }
-
-  const focus = pickFocus(proposed.focus, fallback.focus);
-
-  return { skill: proposed.skill, level, focus, source: "model", reason: "Chosen by the on-device model." };
-}
-
-const pickFocus = (f: unknown, fallback: string) =>
-  typeof f === "string" && f.trim() ? f.trim().slice(0, 60) : fallback;
 
 /** The deterministic learner-model update, used without a model or without consent. */
 export function ruleReview(model: LearnerModel, attempts: Attempt[]): LearnerModel {
@@ -349,8 +299,7 @@ export function planOptions(profile: ChildProfile, model: LearnerModel, history:
   }
   // A skill already finished (three first-try answers at level 5) is not
   // offered again until every skill in the band is finished.
-  const finished = (sk: SkillId) =>
-    history.filter((a) => a.skill === sk && a.level === 5 && a.correct && a.tries === 1).length >= 3;
+  const finished = (sk: SkillId) => isMastered(sk, history);
   const open = band.filter((b) => !finished(b));
   for (const sk of open.length ? open : band) {
     if (sk === S) continue;
@@ -376,4 +325,9 @@ export function planFromOption(o: PlanOption, reason: string, last?: Attempt): P
     : o.kind === "concrete" ? `back to ${REP_LABEL[o.rep]}`
     : "one more like that";
   return { skill: o.skill, level: o.level, focus, source: "model", reason, rep: o.rep };
+}
+
+/** Mastered: three first-try right answers at the top level (5). */
+export function isMastered(skill: SkillId, attempts: Attempt[]): boolean {
+  return attempts.filter((a) => a.skill === skill && a.level === 5 && a.correct && a.tries === 1).length >= 3;
 }

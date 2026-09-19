@@ -23,11 +23,6 @@ const PROBE_TTL_MS = 30_000;
 
 let cached: { provider: LLMProvider; at: number } | null = null;
 
-/** Force a specific provider. Used by the eval harness and by tests. */
-export function overrideProvider(p: LLMProvider | null): void {
-  cached = p ? { provider: p, at: Number.POSITIVE_INFINITY } : null;
-}
-
 export async function resolveProvider(force = false): Promise<LLMProvider> {
   if (!force && cached && Date.now() - cached.at < PROBE_TTL_MS) {
     return cached.provider;
@@ -63,6 +58,5 @@ export async function providerStatus(): Promise<ProviderStatus> {
           : p.id === "hosted"
             ? HOSTED_MODEL
             : undefined,
-    canGenerate: p.id !== "none",
   };
 }

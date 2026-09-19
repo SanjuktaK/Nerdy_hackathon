@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BodyId, Character as CharacterSpec } from "@/lib/learn/types";
 import { worldOf } from "@/lib/learn/worlds";
 
-export type Mood = "calm" | "happy" | "cheer" | "thinking" | "eating" | "sleepy";
+export type Mood = "calm" | "happy" | "cheer" | "thinking" | "eating" | "sleepy" | "talking";
 
 function Face({ mood, x = 50, y = 50, ink = "#3a2a1a" }: { mood: Mood; x?: number; y?: number; ink?: string }) {
   const closed = mood === "sleepy" || mood === "eating";
@@ -34,11 +34,16 @@ function Face({ mood, x = 50, y = 50, ink = "#3a2a1a" }: { mood: Mood; x?: numbe
     thinking: `M${x - 4} ${y + 12} q4 -2 8 0`,
     eating: `M${x - 4} ${y + 10} q4 5 8 0 z`,
     sleepy: `M${x - 4} ${y + 12} q4 2 8 0`,
+    talking: "",
   };
   return (
     <g>
       {eye(x - 9)}
       {eye(x + 9)}
+      {mood === "talking" ? (
+        // An open mouth that moves while the voice plays.
+        <ellipse cx={x} cy={y + 12} rx="5.5" ry="4.5" fill="#7a3b2a" stroke={ink} strokeWidth="1.8" className="talk-mouth" />
+      ) : (
       <path
         d={mouth[mood]}
         stroke={ink}
@@ -47,7 +52,8 @@ function Face({ mood, x = 50, y = 50, ink = "#3a2a1a" }: { mood: Mood; x?: numbe
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {(mood === "happy" || mood === "cheer") && (
+      )}
+      {(mood === "happy" || mood === "cheer" || mood === "talking") && (
         <>
           <ellipse cx={x - 16} cy={y + 7} rx="4" ry="2.4" fill="#f08a8a" opacity="0.45" />
           <ellipse cx={x + 16} cy={y + 7} rx="4" ry="2.4" fill="#f08a8a" opacity="0.45" />
@@ -370,6 +376,13 @@ export function Buddy({
   onSay?: (line: string) => void;
 }) {
   const [react, setReact] = useState<Mood | null>(null);
+  const [speaking, setSpeaking] = useState(false);
+  // The voice announces when it starts and stops; the mouth follows it.
+  useEffect(() => {
+    const on = (e: Event) => setSpeaking(!!(e as CustomEvent<boolean>).detail);
+    window.addEventListener("tally:speaking", on);
+    return () => window.removeEventListener("tally:speaking", on);
+  }, []);
   const [bump, setBump] = useState(0);
   const tapCount = useRef(0);
   useEffect(() => {
@@ -397,7 +410,7 @@ export function Buddy({
       className="buddy relative rounded-full disabled:cursor-default"
     >
       <span key={bump} className={react ? "inline-block animate-wiggle" : "inline-block animate-breathe"}>
-        <CharacterArt character={character} mood={react ?? mood} size={size} />
+        <CharacterArt character={character} mood={react ?? (speaking && mood !== "sleepy" ? "talking" : mood)} size={size} />
       </span>
     </button>
   );

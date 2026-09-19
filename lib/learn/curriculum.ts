@@ -139,3 +139,10 @@ export function allowedSkills(grade: GradeBand): SkillId[] {
   const review = own.map((s) => PREREQUISITE[s]).filter((s): s is SkillId => !!s);
   return [...new Set([...own, ...review])];
 }
+
+/** The next school year this demo can teach, if there is one. */
+export function nextGrade(g: GradeBand): GradeInfo | null {
+  const i = GRADES.findIndex((x) => x.id === g);
+  const n = GRADES[i + 1];
+  return n && n.available ? n : null;
+}

@@ -41,9 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# eval output — produced by npm run eval, never committed
-/eval/results.json
-
 # local LLM (MLX)
 /.venv-mlx/
 /.venv-tts/
@@ -51,3 +48,9 @@ next-env.d.ts
 
 # python bytecode
 __pycache__/
+/.cache/
+
+# design notes and agent instructions: kept locally, not shipped
+/architecture-v2.md
+/AGENTS.md
+/CLAUDE.md

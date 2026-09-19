@@ -4,7 +4,9 @@
 // shown to the child, and never used to choose the next puzzle.
 // ============================================================
 
-import { REP_LABEL, SKILL_LABEL } from "./curriculum";
+import { REP_LABEL, SKILL_LABEL, gradeInfo, nextGrade } from "./curriculum";
+import { SIGN_TEXT } from "./overload";
+import { isMastered } from "./policy";
 import { MISTAKE_TEXT } from "./diagnose";
 import type { Attempt, ChildProfile, Mistake, SessionRecord } from "./types";
 
@@ -13,6 +15,10 @@ export interface Note {
   id: string;
   title: string;
   detail: string;
+  /** Words to show as a quote, e.g. the model's guess itself. */
+  quote?: string;
+  /** Where to see more, on the grown-ups page. */
+  link?: { href: string; label: string };
 }
 
 const median = (xs: number[]) => {
@@ -27,6 +33,8 @@ export function computeNotes(profile: ChildProfile, sessions: SessionRecord[], e
   const last = sessions[sessions.length - 1];
 
   // 1. The same slip across three sessions.
+  // Ids name the observation, not a count, so a note read once stays read
+  // while it still holds, and only a genuinely new event shows as new.
   const bySlip = new Map<Mistake, Set<string>>();
   for (const s of recent) {
     for (const a of s.attempts) {
@@ -37,7 +45,7 @@ export function computeNotes(profile: ChildProfile, sessions: SessionRecord[], e
   for (const [m, ids] of bySlip) {
     if (ids.size >= 3) {
       notes.push({
-        id: `slip:${m}:${ids.size}`,
+        id: `slip:${m}:${[...ids][0]}`,
         title: `The same slip in ${ids.size} sessions`,
         detail: `${who} ${MISTAKE_TEXT[m]} in ${ids.size} of the last ${recent.length} sessions. The app keeps giving easier steps for it; practising it together away from the screen may help too.`,
       });
@@ -63,7 +71,7 @@ export function computeNotes(profile: ChildProfile, sessions: SessionRecord[], e
   const early = lastThree.filter((s) => s.attempts.length < expected).length;
   if (lastThree.length >= 2 && early >= 2) {
     notes.push({
-      id: `breaks:${lastThree.map((s) => s.id).join(",")}`,
+      id: `breaks:${[...lastThree].reverse().find((s) => s.attempts.length < expected)?.id}`,
       title: "Breaks asked for early",
       detail: `${who} pressed "I need a break" before the end in ${early} of the last ${lastThree.length} sessions. Shorter sessions (Settings → puzzles per session) might suit better for now.`,
     });
@@ -80,7 +88,7 @@ export function computeNotes(profile: ChildProfile, sessions: SessionRecord[], e
       const other = as.filter((a) => a.rep === r);
       if (pics.length >= 3 && other.length >= 3 && rate(pics) >= 0.75 && rate(other) < 0.5) {
         notes.push({
-          id: `rep:${sk}:${r}:${other.length}`,
+          id: `rep:${sk}:${r}`,
           title: `${SKILL_LABEL[sk]}: ${REP_LABEL[r]} still new`,
           detail: `${who} is comfortable with ${SKILL_LABEL[sk].toLowerCase()} as pictures, and still finding it harder as ${REP_LABEL[r]}. The app will keep stepping between the two.`,
         });
@@ -88,13 +96,46 @@ export function computeNotes(profile: ChildProfile, sessions: SessionRecord[], e
     }
   }
 
-  // 5. Answers the app could not explain.
+  // 5. An answer the rules could not explain: say which, and show the guess itself.
   const guesses = recent.flatMap((s) => s.attempts).filter((a) => a.hypothesis);
   if (guesses.length) {
+    const g = guesses[guesses.length - 1];
+    const unit = g.skill === "timeHour" ? " o'clock" : g.skill === "money" ? "¢" : g.skill === "measure" ? " cm" : "";
+    const more = guesses.length - 1;
     notes.push({
-      id: `guess:${guesses.length}:${last?.id ?? ""}`,
-      title: `${guesses.length} answer${guesses.length === 1 ? "" : "s"} the app could not explain`,
-      detail: `The on-device model has a guess at what ${who} might have been thinking. They are in the Sessions list, marked as guesses.`,
+      id: `guess:${g.questionId}`,
+      title: `A guess about one of ${who}'s answers`,
+      detail:
+        `In a ${SKILL_LABEL[g.skill].toLowerCase()} puzzle, ${who} answered ${g.given}${unit} when the answer was ${g.expected}${unit}. ` +
+        `The app's rules could not name the slip, so the on-device model made a guess. It is only a guess, and it never changes the puzzles.` +
+        (more ? ` ${more} earlier guess${more === 1 ? " is" : "es are"} in the session history.` : ""),
+      quote: g.hypothesis,
+      link: { href: "/grown-ups#sessions", label: "See it in the session history" },
+    });
+  }
+
+  // 6. Breaks offered because answers looked hard.
+  const offered = recent.flatMap((s) => (s.offers ?? []).map((o) => ({ ...o, session: s.id })));
+  if (offered.length) {
+    const taken = offered.filter((o) => o.accepted).length;
+    const signs = [...new Set(offered.map((o) => SIGN_TEXT[o.sign]))];
+    notes.push({
+      id: `offers:${offered[offered.length - 1].session}:${offered[offered.length - 1].at}`,
+      title: `A break was offered ${offered.length} time${offered.length === 1 ? "" : "s"}`,
+      detail: `The app noticed ${signs.join(" and ")} and offered ${who} a break. ${who} took ${taken} of them. This is from answers and taps only — no camera or microphone.`,
+    });
+  }
+
+  // 7. Every skill in the school year finished: time to think about the next one.
+  const band = gradeInfo(profile.grade);
+  if (band.skills.length && band.skills.every((sk) => isMastered(sk, all))) {
+    const next = nextGrade(profile.grade);
+    notes.push({
+      id: `ready:${profile.grade}`,
+      title: next ? `Ready for ${next.label}` : "Everything in this demo is mastered",
+      detail: next
+        ? `${who} has finished every ${band.label} skill at the top level. You can move up to ${next.label} under “About ${who}”.`
+        : `${who} has finished every skill up to 2nd grade. 3rd grade is coming next; until then the app keeps practising for review.`,
     });
   }
 

@@ -1,5 +1,5 @@
 {
-  "name": "beadframe",
+  "name": "tally-tales",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,16 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts tests/*.test.tsx",
-    "stems:seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/seed-stems.mts",
-    "stems:generate": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/generate-stems.mts",
-    "eval": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/eval.mts",
-    "check": "npm run typecheck && npm run test && npm run stems:seed",
-    "try:model": "node --env-file-if-exists=.env.local --env-file-if-exists=.env --import tsx scripts/try-model.mts",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check": "npm run typecheck && npm run lint && npm run test",
     "llm:quantize": "bash scripts/mlx/quantize.sh",
     "llm:serve": "bash scripts/mlx/serve.sh",
-    "llm:bench": "mkdir -p .models/bench && node --import tsx scripts/mlx/bench-prompts.mts > .models/bench/prompts.json && .venv-mlx/bin/python scripts/mlx/bench.py && node --import tsx scripts/mlx/score.mts",
-    "tts:serve": "bash scripts/tts/serve.sh"
+    "tts:serve": "bash scripts/tts/serve.sh",
+    "demo:data": "node --import tsx scripts/demo-data.mts"
   },
   "dependencies": {
     "next": "16.3.4",
@@ -26,13 +22,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
-    "jsdom": "^25.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5"

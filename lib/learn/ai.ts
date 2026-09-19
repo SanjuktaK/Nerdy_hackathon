@@ -260,19 +260,6 @@ async function polishCharacter(p: ChildProfile, base: Character): Promise<Charac
 // picks skill + level + focus, the engine picks the numbers, and then the
 // model writes one sentence around numbers it is handed.
 
-export const FOCUS_OPTIONS = [
-  "warm up",
-  "one more like that",
-  "a little harder",
-  "counting carefully",
-  "adding or taking away",
-  "carrying and borrowing",
-  "tens and ones",
-  "more and less",
-  "something new",
-  "an easier step",
-] as const;
-
 const PLAN_SYSTEM = `You are a patient maths teacher for a young autistic child. You decide the next question.
 You get how the child is doing on each skill, their recent answers, and a list of options.
 Decide like a good teacher:
@@ -559,8 +546,32 @@ export async function reviewSession(
 const PRAISE = /\b(good|well|great|strong|confident|solid|easily)\b/i;
 const NEXT = /\b(practi[sc]e|next|work on|working on|needs?|tricky|harder)\b/i;
 
-/** Loose match of a skill in prose: "adding within 20" also matches "Adding within 20". */
-const mentions = (sentence: string, skill: SkillId) => sentence.toLowerCase().includes(SKILL_LABEL[skill].toLowerCase());
+/**
+ * The everyday words a note might use for a skill. "Did well with
+ * addition" is about the adding skills even though it never says
+ * "Adding within 1000" — which is how a contradiction slipped through.
+ */
+const SKILL_WORDS: Record<SkillId, RegExp> = {
+  count: /\bcount(ing|s|ed)?\b/i,
+  recognise: /\brecogni[sz]\w*|number names?\b/i,
+  compare: /\b(more and less|more or less|compar\w*|bigger|smaller|fewer)\b/i,
+  add10: /\b(add(ing|ition|s|ed)?|plus|sums?)\b/i,
+  add20: /\b(add(ing|ition|s|ed)?|plus|sums?)\b/i,
+  add1000: /\b(add(ing|ition|s|ed)?|plus|sums?|carry\w*)\b/i,
+  sub10: /\b(subtract\w*|tak(e|ing) away|minus|take-away)\b/i,
+  sub20: /\b(subtract\w*|tak(e|ing) away|minus|take-away)\b/i,
+  sub1000: /\b(subtract\w*|tak(e|ing) away|minus|take-away|borrow\w*)\b/i,
+  shapes: /\bshapes?\b/i,
+  placeValue100: /\b(place value|tens and ones)\b/i,
+  placeValue1000: /\b(place value|hundreds)\b/i,
+  timeHour: /\b(time|clocks?|o'clock|hours?)\b/i,
+  money: /\b(money|coins?|cents?)\b/i,
+  measure: /\b(measur\w*|rulers?|length|long|centimet\w*)\b/i,
+};
+
+/** A skill is mentioned by its name or by an everyday word for it. */
+const mentions = (sentence: string, skill: SkillId) =>
+  sentence.toLowerCase().includes(SKILL_LABEL[skill].toLowerCase()) || SKILL_WORDS[skill].test(sentence);
 
 /**
  * A small model will happily write "good at adding" about the skill the

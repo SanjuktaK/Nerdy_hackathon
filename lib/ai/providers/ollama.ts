@@ -6,8 +6,6 @@
 
 import type { CompletionRequest, LLMProvider } from "../types";
 import { ProviderUnavailable } from "../types";
-import { STEM_BATCH_SCHEMA, type GeneratedStem, type GenerationRequest } from "../validate";
-import { STEM_SYSTEM, stemUserPrompt } from "../prompts";
 
 const BASE = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
 export const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "llama3.2:3b";
@@ -73,44 +71,6 @@ export const ollamaProvider: LLMProvider = {
     }
   },
 
-  async generate(req: GenerationRequest, count: number): Promise<GeneratedStem[]> {
-    const raw = await chat({
-      system: STEM_SYSTEM,
-      user: stemUserPrompt(req, count),
-      format: STEM_BATCH_SCHEMA,
-      temperature: 0.8,
-    });
-    return parseStemBatch(raw);
-  },
 
   complete: chat,
 };
-
-/** Never trust the shape. Tolerates a bare array or a fenced block. */
-export function parseStemBatch(raw: string): GeneratedStem[] {
-  const text = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const m = text.match(/[[{][\s\S]*[\]}]/);
-    if (!m) return [];
-    try {
-      parsed = JSON.parse(m[0]);
-    } catch {
-      return [];
-    }
-  }
-  const arr = Array.isArray(parsed)
-    ? parsed
-    : Array.isArray((parsed as { stems?: unknown }).stems)
-      ? (parsed as { stems: unknown[] }).stems
-      : [];
-  return arr
-    .filter((x): x is Record<string, unknown> => typeof x === "object" && x !== null)
-    .map((x) => ({
-      stem: typeof x.stem === "string" ? x.stem : "",
-      spriteKey: typeof x.spriteKey === "string" ? x.spriteKey : "",
-    }))
-    .filter((x) => x.stem.length > 0);
-}

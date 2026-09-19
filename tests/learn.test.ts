@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { factNote, noteMatchesFacts, validateStory } from "../lib/learn/ai";
-import { ALL_SKILLS } from "../lib/learn/curriculum";
+import { ALL_SKILLS, allowedSkills } from "../lib/learn/curriculum";
 import { diagnose } from "../lib/learn/diagnose";
 import { generateQuestion } from "../lib/learn/generate";
-import { guardPlan, initialModel, planOptions, rulePlan, ruleReview } from "../lib/learn/policy";
+import { initialModel, planOptions, rulePlan, ruleReview } from "../lib/learn/policy";
 import type { Attempt, ChildProfile, Level } from "../lib/learn/types";
 import { WORLDS, worldForShow } from "../lib/learn/worlds";
 
@@ -97,15 +97,11 @@ test("rules: wrong answer → same skill, one level easier; at level 1 → prere
   assert.equal(back.skill, "add10");
 });
 
-test("guard: the model may never go harder straight after a miss, or leave the band", () => {
-  const history = [attempt({ correct: false, level: 3 })];
-  const fallback = rulePlan(profile, initialModel(profile), history);
-  const harder = guardPlan({ skill: "add20", level: 5 }, profile, history, fallback);
-  assert.ok(harder.level < 3);
-  const offBand = guardPlan({ skill: "money", level: 1 }, profile, history, fallback);
-  assert.equal(offBand.source, "rules");
-  const noConsent = guardPlan({ skill: "add20", level: 1 }, { ...profile, adaptConsent: false }, history, fallback);
-  assert.equal(noConsent.source, "rules");
+test("menu: every option stays in the child's school year (or one step of review)", () => {
+  const allowed = allowedSkills(profile.grade);
+  for (const history of [[], [attempt({ correct: false, level: 3 })], [attempt({ level: 5 }), attempt({ level: 5 })]]) {
+    for (const o of planOptions(profile, initialModel(profile), history)) assert.ok(allowed.includes(o.skill), o.skill);
+  }
 });
 
 test("model stories must carry exactly the question's numbers", () => {
@@ -117,12 +113,6 @@ test("model stories must carry exactly the question's numbers", () => {
   assert.equal(validateStory("Pooh does not eat 7 or 3 pots.", [7, 3]), null, "negation");
   assert.equal(validateStory("Pooh has 7 pots! He eats 3.", [7, 3]), null, "exclamation");
   assert.equal(validateStory("Pooh finds a round circle in the sand.", [], "circle"), null, "names the shape");
-});
-
-test("guard: after a miss the same skill must get easier, even if the model keeps the level", () => {
-  const history = [attempt({ correct: false, level: 3 })];
-  const fallback = rulePlan(profile, initialModel(profile), history);
-  assert.equal(guardPlan({ skill: "add20", level: 3 }, profile, history, fallback).level, 2);
 });
 
 test("review rules: a miss lowers the level, a second-try solve holds it, first-try solves raise it", () => {
@@ -151,22 +141,14 @@ test("review notes that contradict the facts are rejected", () => {
   assert.match(factNote("Sam", [attempt({ correct: true })], ["add20"], []), /Sam solved 1 of 1/);
 });
 
-test("guard: review skills from the band below only after a slip", () => {
-  const fallback = rulePlan(profile, initialModel(profile), []);
-  assert.equal(guardPlan({ skill: "add10", level: 2 }, profile, [], fallback).source, "rules");
-  const slip = [attempt({ skill: "add20", level: 1, correct: false })];
-  assert.equal(guardPlan({ skill: "add10", level: 2 }, profile, slip, fallback).source, "model");
-});
-
-test("a child who keeps answering right first time climbs and moves on (rules alone)", () => {
+test("with no model, the rules alone move a child who keeps answering right first time up and on", () => {
   let model = initialModel(profile);
   const all: Attempt[] = [];
   for (let s = 0; s < 3; s++) {
     const sess: Attempt[] = [];
     for (let q = 0; q < 5; q++) {
       const hist = [...all.slice(-6), ...sess];
-      // A model that always answers with the old prompt example must not hold the child back.
-      const plan = guardPlan({ skill: "add20", level: 2 }, profile, hist, rulePlan(profile, model, hist));
+      const plan = rulePlan(profile, model, hist);
       sess.push(attempt({ skill: plan.skill, level: plan.level, correct: true, tries: 1 }));
     }
     all.push(...sess);
@@ -225,4 +207,25 @@ test("notes for grown-ups: repeated slips and early breaks are noticed, nothing 
   assert.ok(slips.some((n) => n.id.startsWith("slip:regrouping")));
   const breaks = computeNotes(profile, [sess("a", 5), sess("b", 2), sess("c", 1)]);
   assert.ok(breaks.some((n) => n.id.startsWith("breaks:")));
+});
+
+test("the note fact-check understands everyday words, not only skill names", () => {
+  // The note from the screenshot: praise for adding while adding is being worked on.
+  assert.equal(noteMatchesFacts("Sam did well with addition. Next step is subtraction.", ["sub1000"], ["add1000"]), false);
+  assert.equal(noteMatchesFacts("Sam did well with taking away. Adding is the next thing to practise.", ["sub1000"], ["add1000"]), true);
+  assert.equal(noteMatchesFacts("Sam read the clock well. Coins are next.", ["money"], ["timeHour"]), false);
+});
+
+test("overload signs: two shown answers in a row, frantic tapping", async () => {
+  const { franticTapping, missedTwice } = await import("../lib/learn/overload");
+  assert.equal(missedTwice([attempt({ correct: false }), attempt({ correct: false })]), true);
+  assert.equal(missedTwice([attempt({ correct: false }), attempt({ correct: true, tries: 2 })]), false);
+  const now = 10_000;
+  assert.equal(franticTapping([now - 2000, now - 1800, now - 1500, now - 1200, now - 900, now - 400, now], now), true);
+  assert.equal(franticTapping([now - 9000, now - 6000, now - 3000, now], now), false);
+});
+
+test("every skill has two at-home activities", async () => {
+  const { AT_HOME } = await import("../lib/learn/athome");
+  for (const s of ALL_SKILLS) assert.equal(AT_HOME[s].length, 2, s);
 });

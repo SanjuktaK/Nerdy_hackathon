@@ -8,14 +8,15 @@ import { CharacterArt } from "@/components/learn/Character";
 import { CHEER_OPTIONS, playCheerSound } from "@/components/learn/Cheer";
 import { FriendEditor } from "@/components/learn/FriendEditor";
 import { ReadAloudPicker, TonePicker, VolumeSlider } from "@/components/learn/SettingsPickers";
-import { setEffects, setVoiceStyle, speak } from "@/lib/learn/sound";
-import { VOICE_OPTIONS, readAloudOf, sensoryFilter, sessionLengthOf, soundSettings, voiceStyleOf } from "@/lib/learn/sensory";
+import { setEffects, setVoiceStyle } from "@/lib/learn/sound";
+import { TEXT_SCALE, readAloudOf, readingClasses, sensoryFilter, sessionLengthOf, soundSettings, voiceStyleOf } from "@/lib/learn/sensory";
+import { AT_HOME } from "@/lib/learn/athome";
 import { computeNotes, type Note } from "@/lib/learn/notes";
-import { GRADES, SKILL_LABEL, gradeInfo } from "@/lib/learn/curriculum";
+import { GRADES, SKILL_LABEL, gradeInfo, nextGrade } from "@/lib/learn/curriculum";
 import { MISTAKE_TEXT } from "@/lib/learn/diagnose";
-import { initialModel } from "@/lib/learn/policy";
+import { initialModel, isMastered } from "@/lib/learn/policy";
 import { getLearn, getLearnServer, resetLearn, subscribeLearn, updateLearn } from "@/lib/learn/store";
-import type { ChildProfile, SessionRecord, SkillId } from "@/lib/learn/types";
+import type { Attempt, ChildProfile, LearnerModel, SkillId } from "@/lib/learn/types";
 import { worldOf } from "@/lib/learn/worlds";
 
 interface Status {
@@ -30,8 +31,12 @@ export default function GrownUps() {
 
   const prof = state?.profile;
   const ch = state?.character;
+  // The grown-ups page is always at normal size; the child's text size is for the child's screens.
   useEffect(() => {
-    if (prof && ch) setVoiceStyle(voiceStyleOf(prof, worldOf(ch).body));
+    document.documentElement.style.fontSize = "100%";
+  }, []);
+  useEffect(() => {
+    if (prof && ch) setVoiceStyle(voiceStyleOf());
   }, [prof, ch]);
 
   useEffect(() => {
@@ -49,7 +54,10 @@ export default function GrownUps() {
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-start gap-4 px-6 py-16">
         <h1 className="font-display text-4xl font-bold">Grown-ups</h1>
         <p className="text-lg text-[var(--ink-soft)]">Nothing is set up on this device yet.</p>
-        <Link href="/" className="btn-primary">Start the setup</Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/" className="btn-primary">Start the setup</Link>
+          <ImportButton hasData={false} />
+        </div>
       </main>
     );
   }
@@ -60,7 +68,9 @@ export default function GrownUps() {
   const who = profile.name || "Your child";
   const allAttempts = sessions.flatMap((s) => s.attempts);
   const right = allAttempts.filter((a) => a.correct).length;
-  const skills = Object.keys(model.levels) as SkillId[];
+  const skills = [...new Set([...gradeInfo(profile.grade).skills, ...(Object.keys(model.levels) as SkillId[])])];
+  const allMastered = gradeInfo(profile.grade).skills.every((sk) => isMastered(sk, allAttempts));
+  const next = nextGrade(profile.grade);
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ app: "tally-tales", exportedAt: new Date().toISOString(), ...state }, null, 2)], {
@@ -77,10 +87,20 @@ export default function GrownUps() {
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-4xl font-bold">Grown-ups</h1>
+          <h1 className="flex items-center gap-3 font-display text-4xl font-bold">
+            Grown-ups
+            {notes.some((n) => !(state.seenNotes ?? []).includes(n.id)) && (
+              <a href="#notes" className="note-badge text-base no-underline" aria-label="New notes">
+                {notes.filter((n) => !(state.seenNotes ?? []).includes(n.id)).length}
+              </a>
+            )}
+          </h1>
           <p className="text-[var(--ink-soft)]">Everything here is stored on this device only.</p>
         </div>
-        <Link href="/" className="btn-secondary">Back to {character.name}</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/grown-ups/report" className="btn-secondary">Report for teachers</Link>
+          <Link href="/" className="btn-secondary">Back to {character.name}</Link>
+        </div>
       </header>
 
       <NotesSection notes={notes} seen={state.seenNotes ?? []} />
@@ -127,8 +147,14 @@ export default function GrownUps() {
               <li key={s} className="flex items-center justify-between gap-3">
                 <span>
                   {SKILL_LABEL[s]}
-                  {model.strengths.includes(s) && <span className="ml-2 badge badge-good">strength</span>}
-                  {model.workingOn.includes(s) && <span className="ml-2 badge">working on</span>}
+                  {isMastered(s, allAttempts) ? (
+                    <span className="ml-2 badge badge-good">mastered ✓</span>
+                  ) : (
+                    <>
+                      {model.strengths.includes(s) && <span className="ml-2 badge badge-good">strength</span>}
+                      {model.workingOn.includes(s) && <span className="ml-2 badge">working on</span>}
+                    </>
+                  )}
                 </span>
                 <span className="flex gap-1" aria-label={`level ${model.levels[s]} of 5`}>
                   {[1, 2, 3, 4, 5].map((l) => (
@@ -139,8 +165,26 @@ export default function GrownUps() {
             ))}
           </ul>
           <p className="text-sm text-[var(--ink-soft)]">
-            {model.sessions} session{model.sessions === 1 ? "" : "s"} so far. A learning tool, not an assessment.
+            5 dots is the top level for the skill. Mastered means 3 answers right first time at that level; a mastered skill then only
+            comes back now and then as review. {model.sessions} session{model.sessions === 1 ? "" : "s"} so far. A learning tool, not an
+            assessment.
           </p>
+          {allMastered && (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#e8f5e6] p-3">
+              <span className="font-semibold text-[#2f6a2a]">
+                {next ? `Every ${gradeInfo(profile.grade).label} skill is mastered.` : "Every skill in this demo is mastered. 3rd grade is coming next."}
+              </span>
+              {next && (
+                <button
+                  type="button"
+                  className="btn-primary min-h-0! px-4! py-1.5! text-base!"
+                  onClick={() => setP({ grade: next.id })}
+                >
+                  Move up to {next.label}
+                </button>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
@@ -183,30 +227,6 @@ export default function GrownUps() {
         <Toggle label="One calm colour" hint="For children upset by bright or changing colour." on={profile.colourSensitive} onChange={(v) => setP({ colourSensitive: v })} />
         {profile.colourSensitive && <TonePicker value={profile.monoTone} onChange={(t) => setP({ monoTone: t })} character={character} />}
         <div className="flex flex-col gap-2">
-          <span className="font-semibold">{character.name}’s voice</span>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {VOICE_OPTIONS.map((v) => {
-              const on = voiceStyleOf(profile, worldOf(character).body) === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  aria-pressed={on}
-                  className={`option ${on ? "option-on" : ""}`}
-                  onClick={() => {
-                    setP({ voiceStyle: v.id });
-                    setVoiceStyle(v.id);
-                    void speak(`Hello, I am ${character.name}. Let us count together.`);
-                  }}
-                >
-                  <span className="font-display text-lg font-bold">{v.title}</span>
-                  <span className="text-[15px] leading-snug text-[var(--ink-soft)]">{v.blurb} Tap to hear it.</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
           <span className="font-semibold">Read aloud</span>
           <ReadAloudPicker value={readAloudOf(profile)} onChange={(r) => setP({ readAloud: r })} />
         </div>
@@ -219,6 +239,31 @@ export default function GrownUps() {
           options={[{ id: "moving", title: "Gently moving scene" }, { id: "still", title: "Still scene" }, { id: "plain", title: "Plain" }]}
           onChange={(v) => setP({ background: v as ChildProfile["background"] })}
         />
+        <Toggle
+          label="Offer a break when things look hard"
+          hint="Off by default: a popup mid-puzzle can itself be a distraction. When on, it looks for two tricky puzzles in a row, very quick guesses or frantic tapping (answers and taps only), and your child can always say “keep going”. The “I need a break” button is always there either way."
+          on={profile.overloadCheck === true}
+          onChange={(v) => setP({ overloadCheck: v })}
+        />
+        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[var(--line)] p-4">
+          <span className="font-semibold">Reading comfort</span>
+          <Choice
+            label="Text size"
+            value={profile.textSize ?? "normal"}
+            options={[{ id: "normal", title: "Normal" }, { id: "large", title: "Large" }, { id: "xlarge", title: "Extra large" }]}
+            onChange={(v) => setP({ textSize: v as ChildProfile["textSize"] })}
+          />
+          <Toggle label="Wider spacing" hint="More room between letters, words and lines." on={!!profile.wideSpacing} onChange={(v) => setP({ wideSpacing: v })} />
+          <Toggle label="Easy-to-read font" hint="Atkinson Hyperlegible: letters and digits that are hard to mix up (1 l I, 0 O)." on={!!profile.readableFont} onChange={(v) => setP({ readableFont: v })} />
+          <div
+            className={`rounded-xl bg-[var(--bg)] p-3 ${readingClasses(profile)}`}
+            style={{ zoom: parseFloat(TEXT_SCALE[profile.textSize ?? "normal"]) / 100 }}
+            aria-label="Preview"
+          >
+            <p className="font-display text-2xl">{character.name} has 14 honey pots. {character.name} eats 6.</p>
+            <p className="font-display text-xl font-bold text-[var(--accent-strong)]">How many are left?</p>
+          </div>
+        </div>
         <Toggle label="No movement" hint="Switches off every animation: bouncing, falling stars, glowing." on={!!profile.reduceMotion} onChange={(v) => setP({ reduceMotion: v })} />
         <Toggle label="Watch-first demos" hint="Show a demo the first time a skill comes up. The child can always skip it." on={profile.showDemos !== false} onChange={(v) => setP({ showDemos: v })} />
         <Toggle label="Stories" hint="Each session is a little story with the friend, sized to how your child communicates." on={profile.likesStories} onChange={(v) => setP({ likesStories: v })} />
@@ -244,10 +289,11 @@ export default function GrownUps() {
         </p>
       </section>
 
-      <AiHealth sessions={sessions} />
+      <AtHome profile={profile} model={model} attempts={allAttempts} />
 
-      <section className="panel flex flex-col gap-4 p-6">
-        <h2 className="font-display text-2xl font-bold">Sessions</h2>
+      <section id="sessions" className="panel flex scroll-mt-4 flex-col gap-4 p-6">
+        <h2 className="font-display text-2xl font-bold">Session history</h2>
+        <p className="text-sm text-[var(--ink-soft)]">Every puzzle, newest session first. Tap a session to open it.</p>
         {sessions.length === 0 && <p className="text-[var(--ink-soft)]">No sessions yet.</p>}
         {[...sessions].reverse().map((s, si) => (
           <details key={s.id} open={si === 0} className="rounded-2xl border-2 border-[var(--line)] p-4">
@@ -299,6 +345,7 @@ export default function GrownUps() {
 
       <section className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-secondary" onClick={exportJson}>Export as JSON</button>
+        <ImportButton hasData />
         {confirmReset ? (
           <>
             <span className="text-[var(--ink-soft)]">This deletes the profile, friend and every session. It cannot be undone.</span>
@@ -354,94 +401,143 @@ function Choice({
 }
 
 function NotesSection({ notes, seen }: { notes: Note[]; seen: string[] }) {
-  // Opening this page is reading the notes: they stop counting as new.
-  useEffect(() => {
-    const ids = notes.map((n) => n.id);
-    if (ids.some((id) => !seen.includes(id))) updateLearn({ seenNotes: [...new Set([...seen, ...ids])] });
-  }, [notes, seen]);
+  // Read means the grown-up said so: opening the page does not count.
+  const markRead = (ids: string[]) => updateLearn({ seenNotes: [...new Set([...seen, ...ids])] });
+  const unread = notes.filter((n) => !seen.includes(n.id));
+  const read = notes.filter((n) => seen.includes(n.id));
   return (
     <section id="notes" className="panel flex flex-col gap-3 p-6">
-      <h2 className="font-display text-2xl font-bold">Notes for you</h2>
-      {notes.length === 0 ? (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-display text-2xl font-bold">
+          Notes for you
+          {unread.length > 0 && <span className="note-badge">{unread.length}</span>}
+        </h2>
+        {unread.length > 1 && (
+          <button type="button" className="chip" onClick={() => markRead(unread.map((n) => n.id))}>
+            Mark all as read
+          </button>
+        )}
+      </div>
+      {notes.length === 0 && (
         <p className="text-[var(--ink-soft)]">Nothing to flag. Notes appear here when something is worth a look — the same slip across sessions, slower answers, early breaks.</p>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {notes.map((n) => (
-            <li key={n.id} className="rounded-2xl border-2 border-[var(--line)] p-4">
+      )}
+      {notes.length > 0 && unread.length === 0 && <p className="text-[var(--ink-soft)]">No new notes. Earlier ones are below.</p>}
+      <ul className="flex flex-col gap-3">
+        {unread.map((n) => (
+          <li key={n.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border-2 border-[#c9cdf5] bg-[#f7f8ff] p-4">
+            <div className="min-w-0 flex-1">
               <p className="font-display text-lg font-semibold">
-                {n.title}
-                {!seen.includes(n.id) && <span className="ml-2 badge badge-model">new</span>}
+                {n.title} <span className="badge badge-model">new</span>
               </p>
               <p className="text-[var(--ink-soft)]">{n.detail}</p>
-            </li>
-          ))}
-        </ul>
+              <NoteExtras n={n} />
+            </div>
+            <button type="button" className="btn-secondary min-h-0! px-4! py-1.5! text-base!" onClick={() => markRead([n.id])}>
+              Got it
+            </button>
+          </li>
+        ))}
+      </ul>
+      {read.length > 0 && (
+        <details className="rounded-2xl border-2 border-[var(--line)] p-3">
+          <summary className="cursor-pointer font-semibold text-[var(--ink-soft)]">Earlier notes ({read.length})</summary>
+          <ul className="mt-2 flex flex-col gap-2">
+            {read.map((n) => (
+              <li key={n.id}>
+                <p className="font-semibold">{n.title}</p>
+                <p className="text-sm text-[var(--ink-soft)]">{n.detail}</p>
+                <NoteExtras n={n} />
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
       <p className="text-sm text-[var(--ink-soft)]">Observations about sessions, not an assessment.</p>
     </section>
   );
 }
 
-interface Check {
-  job: string;
-  ok: boolean;
-  ms: number;
-  sample: string;
+/**
+ * Skills that work on the screen should work at the kitchen table too.
+ * Mastered and strong skills first: those are ready to try with real things.
+ */
+function AtHome({ profile, model, attempts }: { profile: ChildProfile; model: LearnerModel; attempts: Attempt[] }) {
+  const practised = [...new Set(attempts.map((a) => a.skill))];
+  const ready = practised.filter((s) => isMastered(s, attempts) || model.strengths.includes(s));
+  const rest = practised.filter((s) => !ready.includes(s));
+  const skills = [...ready, ...rest].slice(0, 4);
+  const who = profile.name || "your child";
+  return (
+    <section className="panel flex flex-col gap-4 p-6">
+      <h2 className="font-display text-2xl font-bold">Try it at home</h2>
+      <p className="text-[var(--ink-soft)]">
+        The same maths, with real things. A skill {who} can use away from the screen is a skill {who} really has.
+      </p>
+      {skills.length === 0 ? (
+        <p className="text-[var(--ink-soft)]">Ideas appear here after the first session.</p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {skills.map((s) => (
+            <div key={s} className="rounded-2xl border-2 border-[var(--line)] p-4">
+              <p className="font-display text-lg font-semibold">
+                {SKILL_LABEL[s]}
+                {ready.includes(s) && <span className="ml-2 badge badge-good">ready to try</span>}
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-[var(--ink-soft)]">
+                {AT_HOME[s].map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** The quote and the "see more" link a note may carry. */
+function NoteExtras({ n }: { n: Note }) {
+  return (
+    <>
+      {n.quote && <blockquote className="mt-2 rounded-lg bg-[#eef0ff] px-3 py-2 text-[#3e3f9a]">“{n.quote}”</blockquote>}
+      {n.link && (
+        <a href={n.link.href} className="mt-2 inline-block text-sm font-semibold text-[var(--accent-strong)] underline underline-offset-2">
+          {n.link.label} →
+        </a>
+      )}
+    </>
+  );
 }
 
 /**
- * "Is Qwen working?" Two answers: what it has actually done in this child's
- * sessions, and a live check of every job it does.
+ * Bring back a Tally Tales export: a child's profile, friend and history,
+ * e.g. moved from another device. It replaces what is on this device, so
+ * it asks first when there is something to replace.
  */
-function AiHealth({ sessions }: { sessions: SessionRecord[] }) {
-  const [checks, setChecks] = useState<Check[] | null>(null);
-  const [running, setRunning] = useState(false);
-  const plans = sessions.flatMap((s) => s.plans ?? []);
-  const byModel = plans.filter((p) => p.source === "model").length;
-  const stories = plans.filter((p) => (p as { story?: boolean }).story).length;
-  const run = async () => {
-    setRunning(true);
-    setChecks(null);
+function ImportButton({ hasData }: { hasData: boolean }) {
+  const [msg, setMsg] = useState("");
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
     try {
-      const r = await fetch("/api/learn/health", { method: "POST" });
-      setChecks(((await r.json()) as { checks: Check[] }).checks);
+      const d = JSON.parse(await file.text());
+      const ok =
+        d?.app === "tally-tales" && d.profile && typeof d.profile === "object" && d.character && typeof d.character === "object" && Array.isArray(d.sessions);
+      if (!ok) return setMsg("That file is not a Tally Tales export.");
+      if (hasData && !window.confirm("This replaces the child, friend and sessions on this device. Continue?")) return;
+      updateLearn({ profile: d.profile, character: d.character, model: d.model ?? null, sessions: d.sessions, seenNotes: d.seenNotes ?? [] });
+      setMsg(`Imported ${d.profile.name || "the child"}: ${d.sessions.length} session${d.sessions.length === 1 ? "" : "s"}.`);
     } catch {
-      setChecks([]);
-    } finally {
-      setRunning(false);
+      setMsg("That file could not be read.");
     }
   };
   return (
-    <section className="panel flex flex-col gap-4 p-6">
-      <h2 className="font-display text-2xl font-bold">Is the AI working?</h2>
-      {plans.length > 0 && (
-        <p className="text-[var(--ink-soft)]">
-          In {sessions.length} session{sessions.length === 1 ? "" : "s"}: {byModel} of {plans.length} puzzles were chosen by the on-device model and {stories} had a story it wrote. The rest used the app’s rules and templates.
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-secondary" onClick={run} disabled={running}>
-          {running ? "Checking… (about 10 seconds)" : "Run a check"}
-        </button>
-        <span className="text-sm text-[var(--ink-soft)]">Runs every job once on a made-up child and shows what came back.</span>
-      </div>
-      {checks && (
-        <ul className="flex flex-col gap-2">
-          {checks.length === 0 && <li className="text-[var(--ink-soft)]">The check could not reach the app’s server.</li>}
-          {checks.map((c) => (
-            <li key={c.job} className="flex flex-col gap-0.5 rounded-xl border-2 border-[var(--line)] px-3 py-2">
-              <span className="flex items-center gap-2 font-semibold">
-                <span className={`h-3 w-3 rounded-full ${c.ok ? "bg-[#4f9b5a]" : "bg-[#d08a2e]"}`} aria-hidden="true" />
-                {c.job}
-                <span className="text-sm font-normal text-[var(--ink-soft)]">
-                  {c.ok ? "by the model" : "fell back to rules or template"} · {(c.ms / 1000).toFixed(1)} s
-                </span>
-              </span>
-              {c.sample && <span className="text-sm italic text-[var(--ink-soft)]">{c.sample}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <label className="btn-secondary cursor-pointer">
+        Import from JSON
+        <input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} />
+      </label>
+      {msg && <span className="text-sm text-[var(--ink-soft)]" role="status">{msg}</span>}
+    </span>
   );
 }

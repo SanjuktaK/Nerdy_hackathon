@@ -12,9 +12,6 @@
 
 import type { CompletionRequest, LLMProvider } from "../types";
 import { ProviderUnavailable } from "../types";
-import { STEM_BATCH_SCHEMA, type GeneratedStem, type GenerationRequest } from "../validate";
-import { STEM_SYSTEM, stemUserPrompt } from "../prompts";
-import { parseStemBatch } from "./ollama";
 
 const BASE = process.env.MLX_BASE_URL ?? "http://localhost:8080";
 export const MLX_MODEL = process.env.MLX_MODEL ?? "qwen2.5-1.5b-instruct-4bit";
@@ -47,7 +44,7 @@ async function chat(req: CompletionRequest): Promise<string> {
       choices?: { message?: { content?: string } }[];
     };
     // No schema-constrained decoding on this server: the prompt asks for
-    // JSON and parseStemBatch + the validator enforce it (§9.0).
+    // JSON and the caller validates every field (lib/learn/ai.ts).
     return body.choices?.[0]?.message?.content ?? "";
   } finally {
     clearTimeout(timer);
@@ -70,15 +67,6 @@ export const mlxProvider: LLMProvider = {
     }
   },
 
-  async generate(req: GenerationRequest, count: number): Promise<GeneratedStem[]> {
-    const raw = await chat({
-      system: STEM_SYSTEM,
-      user: stemUserPrompt(req, count),
-      format: STEM_BATCH_SCHEMA,
-      temperature: 0.8,
-    });
-    return parseStemBatch(raw);
-  },
 
   complete: chat,
 };

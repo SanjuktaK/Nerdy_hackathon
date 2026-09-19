@@ -20,6 +20,7 @@ import { diagnose } from "@/lib/learn/diagnose";
 import { generateQuestion } from "@/lib/learn/generate";
 import { rulePlan } from "@/lib/learn/policy";
 import type { Note } from "@/lib/learn/notes";
+import { OFFER_COOLDOWN, OFFER_LINE, RUSHED_MS, franticTapping, missedTwice, type OverloadSign } from "@/lib/learn/overload";
 import { readAloudOf, sessionLengthOf } from "@/lib/learn/sensory";
 import { speak, stopSpeaking } from "@/lib/learn/sound";
 import type {
@@ -40,6 +41,9 @@ import { Cheer } from "./Cheer";
 import { GrownUpsLink } from "./GrownUpsLink";
 import { Jar } from "./Items";
 import { DemoPlayer, QuestionCard } from "./Question";
+
+/** Event handlers read the clock through this, so it is plainly not part of drawing. */
+const clock = () => Date.now();
 
 type Phase = "preview" | "pause" | "planning" | "demo" | "play" | "retry" | "cheer" | "reveal" | "break";
 
@@ -87,6 +91,9 @@ export function Session({
   onHypothesis: (questionId: string, text: string) => void;
 }) {
   const total = sessionLengthOf(profile);
+  // The running total as it was when this session began: once the session is
+  // saved, the parent's total already includes it, and adding it twice doubled the count.
+  const [savedBefore] = useState(totalSaved);
   const world = worldOf(character);
   const hero = character.name;
   const [sessionId] = useState(() => `s${Date.now().toString(36)}`);
@@ -110,6 +117,12 @@ export function Session({
   const pausedFrom = useRef<Phase>("play");
   const saved = useRef(false);
   const hypotheses = useRef(new Map<string, string>());
+  // Signs that things are getting hard, and the gentle break offers they led to.
+  const [offer, setOffer] = useState<OverloadSign | null>(null);
+  const offers = useRef<NonNullable<SessionRecord["offers"]>>([]);
+  const tapTimes = useRef<number[]>([]);
+  const rushed = useRef(0);
+  const lastOfferAt = useRef(-Infinity);
   const shownAt = useRef(0);
 
   const say = useCallback(
@@ -145,10 +158,6 @@ export function Session({
         res = { plan: rulePlan(profile, model, [...previous.slice(-40), ...history]), provider: "rules (offline)", latencyMs: 0 };
       }
 
-      // A short, steady pause even when the model is fast: the rhythm is part of the calm.
-      const wait = Math.max(0, 900 - (Date.now() - t0));
-      await new Promise((r) => setTimeout(r, wait));
-
       const next = generateQuestion({
         skill: res.plan.skill,
         level: res.plan.level,
@@ -158,12 +167,23 @@ export function Session({
         story: profile.likesStories ? res.story : undefined,
         rep: res.plan.rep ?? model.reps?.[res.plan.skill] ?? "C",
       });
+      const needsDemo = profile.showDemos !== false && !demoed.current.has(next.skill);
+      // Start reading the puzzle now, during the pause, so its first word
+      // lands as it appears. (With a demo first, it is read after the demo.)
+      if (readAloud && !needsDemo) {
+        speak(`${index === total - 1 ? "Last puzzle. " : ""}${next.story} ${next.ask}`, { quiet });
+      }
+
+      // A short, steady pause even when the model is fast: the rhythm is part of the calm.
+      const wait = Math.max(0, 900 - (Date.now() - t0));
+      await new Promise((r) => setTimeout(r, wait));
+
       setPlans((p) => [...p, { ...res.plan, provider: res.provider, latencyMs: res.latencyMs, story: !!res.story }]);
       setQ(next);
       shownAt.current = Date.now();
 
       const lastOne = index === total - 1;
-      if (profile.showDemos !== false && !demoed.current.has(next.skill)) {
+      if (needsDemo) {
         demoed.current.add(next.skill);
         // The demo is an easier question with a different answer, so watching
         // it never hands the child the answer to their own turn.
@@ -184,7 +204,6 @@ export function Session({
         setPhase("play");
         // A calm warning before the end, so the break is never a surprise.
         setBubble(lastOne ? "Last puzzle. Then a break." : "Your turn.");
-        if (readAloud) speak(`${lastOne ? "Last puzzle. " : ""}${next.story} ${next.ask}`, { quiet });
       }
     },
     [hero, model, previous, premise, profile, quiet, readAloud, sessionId, total, world]
@@ -205,6 +224,23 @@ export function Session({
       .catch(() => setPremise(null));
   }, [hero, profile, world]);
   useEffect(() => () => stopSpeaking(), []);
+
+  // The end of a full set is said once, after the cheer (the queue waits for it).
+  const endRead = useRef(false);
+  useEffect(() => {
+    if (phase !== "break" || !readAloud || endRead.current || attempts.length !== total) return;
+    endRead.current = true;
+    speak(`You finished all ${total} puzzles. Now it is time to rest.`, { quiet });
+  }, [phase, readAloud, attempts.length, total, quiet]);
+
+  // The schedule is read out when it appears — with today's story opening
+  // once the model has written it — not when the child presses "Let's go".
+  const scheduleRead = useRef(false);
+  useEffect(() => {
+    if (phase !== "preview" || !readAloud || scheduleRead.current || premise === undefined) return;
+    scheduleRead.current = true;
+    speak(`Today with ${hero}. ${premise ? `${premise} ` : ""}First, ${total} puzzles. Then, a break.`, { quiet });
+  }, [phase, readAloud, premise, hero, total, quiet]);
 
   // ---------- answering ----------
 
@@ -227,8 +263,28 @@ export function Session({
     return next;
   };
 
+  const maybeOffer = (sign: OverloadSign, answered: number) => {
+    if (profile.overloadCheck !== true || offer) return;
+    if (answered - lastOfferAt.current < OFFER_COOLDOWN) return;
+    lastOfferAt.current = answered;
+    setOffer(sign);
+    say(OFFER_LINE[sign]);
+  };
+
+  const closeOffer = (accepted: boolean) => {
+    if (!offer) return;
+    offers.current.push({ sign: offer, accepted, at: clock() });
+    setOffer(null);
+    if (accepted) takeBreak();
+    else setBubble("Okay. We keep going, slowly.");
+  };
+
   const answer = (given: string) => {
     if (!q) return;
+    if (given !== q.answer && clock() - shownAt.current < RUSHED_MS) {
+      rushed.current += 1;
+      if (rushed.current >= 2) maybeOffer("rushing", attempts.length);
+    }
     if (given === q.answer) {
       record(true, given, firstMistake);
       setPhase("cheer");
@@ -243,7 +299,8 @@ export function Session({
       return;
     }
     const mistake = firstMistake === "none" ? m : firstMistake;
-    record(false, given, mistake);
+    const done = record(false, given, mistake);
+    if (missedTwice(done)) maybeOffer("misses", done.length);
     if (mistake === "guess" && profile.adaptConsent) askForGuess(q, given);
     setPhase("reveal");
     say(`The answer is ${q.mode === "choices" ? q.choices.find((c) => c.id === q.answer)?.label ?? q.answer : q.answer}.`);
@@ -275,7 +332,14 @@ export function Session({
     if (!done.length) return;
     saved.current = true;
     const withGuesses = done.map((a) => (hypotheses.current.has(a.questionId) ? { ...a, hypothesis: hypotheses.current.get(a.questionId) } : a));
-    const rec: SessionRecord = { id: sessionId, startedAt, endedAt: Date.now(), attempts: withGuesses, plans: plans.slice(0, done.length) };
+    const rec: SessionRecord = {
+      id: sessionId,
+      startedAt,
+      endedAt: Date.now(),
+      attempts: withGuesses,
+      plans: plans.slice(0, done.length),
+      offers: offers.current,
+    };
     const reviewed = fetch("/api/learn/review", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -343,16 +407,46 @@ export function Session({
       <div className="grid flex-1 gap-5 lg:grid-cols-[300px_1fr]">
         <aside className="panel flex flex-row items-center gap-4 lg:flex-col lg:justify-start lg:pt-8">
           <div className="relative flex flex-col items-center">
-            <Buddy character={character} mood={mood} size={150} interactive={phase !== "demo"} onSay={say} />
+            <Buddy
+              character={character}
+              mood={mood}
+              size={150}
+              interactive={phase !== "demo"}
+              onSay={(line) => {
+                setBubble(line);
+                if (readAloud) speak(line, { quiet, interrupt: true });
+              }}
+            />
             <p className="font-display text-xl font-bold">{hero}</p>
           </div>
           <div className="flex flex-1 flex-col items-center gap-4">
             <p className="bubble" aria-live="polite">{bubble}</p>
-            <Jar world={world} filled={solved} of={total} total={totalSaved + solved} label={world.jar} size={92} />
+            <Jar world={world} filled={solved} of={total} total={savedBefore + solved} label={world.jar} size={92} />
           </div>
         </aside>
 
-        <main className="panel flex flex-col items-center justify-center gap-4 p-5 sm:p-8">
+        <main
+          className="panel relative flex flex-col items-center justify-center gap-4 p-5 sm:p-8"
+          onPointerDownCapture={() => {
+            const now = Date.now();
+            tapTimes.current = [...tapTimes.current.filter((t) => now - t < 3000), now];
+            if (franticTapping(tapTimes.current, now)) maybeOffer("tapping", attempts.length);
+          }}
+        >
+          {offer && (
+            <div className="offer-card" role="dialog" aria-label="Would you like a break?">
+              <CharacterArt character={character} mood="calm" size={70} />
+              <p className="font-display text-2xl font-semibold">{OFFER_LINE[offer]}</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button type="button" className="btn-primary" onClick={() => closeOffer(true)} autoFocus>
+                  Yes, a break
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => closeOffer(false)}>
+                  Keep going
+                </button>
+              </div>
+            </div>
+          )}
           {phase === "preview" && (
             <div className="flex w-full flex-col items-center gap-6 py-4 text-center">
               <p className="font-display text-3xl font-bold">Today with {hero}</p>
@@ -383,10 +477,7 @@ export function Session({
                 type="button"
                 className="btn-primary btn-xl"
                 autoFocus
-                onClick={() => {
-                  if (readAloud) speak(`First, ${total} puzzles. Then, a break.`, { quiet });
-                  void planNext([]);
-                }}
+                onClick={() => void planNext([])}
               >
                 Let’s go
               </button>
@@ -450,8 +541,8 @@ export function Session({
                 tried={tried}
                 state={phase === "reveal" ? { selected: q.answer, abacus: q.mode === "abacus" ? Number(q.answer) : undefined, annot: { worked: 9 } } : undefined}
                 onAnswer={answer}
-                onSpeak={voiceMode === "off" ? undefined : (t) => speak(t, { quiet })}
-                onCount={readAloud ? (n) => speak(String(n), { quiet, rate: 1 }) : undefined}
+                onSpeak={voiceMode === "off" ? undefined : (t) => speak(t, { quiet, interrupt: true })}
+                onCount={readAloud ? (n) => speak(String(n), { quiet, rate: 1, interrupt: true }) : undefined}
               />
               {phase === "retry" && <p className="hint" role="status">{HINTS[firstMistake](q)}</p>}
               {phase === "reveal" && (
@@ -467,7 +558,7 @@ export function Session({
 
           {phase === "cheer" && (
             <div className="flex w-full flex-col items-center gap-2">
-              <Cheer style={profile.cheer} character={character} soundSensitive={profile.soundSensitive} line={`${hero} adds to the ${world.jar}.`} />
+              <Cheer style={profile.cheer} character={character} soundSensitive={profile.soundSensitive} voiceOn={voiceMode !== "off"} line={`${hero} adds to the ${world.jar}.`} />
               <button type="button" className="btn-primary" onClick={next} autoFocus>
                 {attempts.length >= total ? "Finish" : "Next"}
               </button>
@@ -475,13 +566,24 @@ export function Session({
           )}
 
           {phase === "break" && (
-            <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="flex w-full flex-col items-center gap-4 py-6 text-center">
+              {/* Finishing the whole set is celebrated, in the cheer style the grown-up
+                  chose — for finishing, not for a score. Stopping early is not. */}
+              {attempts.length === total ? (
+                <Cheer
+                  style={profile.cheer}
+                  character={character}
+                  soundSensitive={profile.soundSensitive}
+                  voiceOn={voiceMode !== "off"}
+                  line={`You finished all ${total} puzzles.`}
+                />
+              ) : null}
               <p className="font-display text-4xl font-bold">Break time.</p>
               <p className="max-w-md text-xl text-[var(--ink-soft)]">
                 {attempts.length === total ? `All ${total} puzzles are done.` : attempts.length ? `${attempts.length} puzzle${attempts.length === 1 ? " is" : "s are"} done.` : "Rest first."}{" "}
                 {solved > 0 ? `${hero} saved ${solved} in the ${world.jar}.` : ""} Now it is time to rest.
               </p>
-              <Jar world={world} filled={solved} of={total} total={totalSaved + solved} label={world.jar} size={140} />
+              <Jar world={world} filled={solved} of={total} total={savedBefore + solved} label={world.jar} size={140} />
               <button type="button" className="btn-primary" onClick={onHome} autoFocus>
                 Back home
               </button>

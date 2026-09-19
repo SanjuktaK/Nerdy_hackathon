@@ -4,11 +4,9 @@
 #
 #   npm run llm:quantize
 #
-# Produces, under .models/ (hidden, so macOS Storage's "Large Files" cleanup
-# does not offer the weights for deletion):
-#   qwen2.5-1.5b-instruct-4bit   the served model (~0.9 GB, from 3.1 GB)
-#   qwen2.5-1.5b-instruct-8bit   the comparison rung for the benchmark
-#   qwen2.5-0.5b-instruct-4bit   draft model for speculative decoding
+# Produces .models/qwen2.5-1.5b-instruct-4bit (~0.9 GB, from 3.1 GB), the
+# model `npm run llm:serve` serves. .models/ is hidden so macOS Storage's
+# "Large Files" clean-up does not offer the weights for deletion.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -41,7 +39,5 @@ quantize() { # repo bits out
 }
 
 quantize Qwen/Qwen2.5-1.5B-Instruct 4 qwen2.5-1.5b-instruct-4bit
-quantize Qwen/Qwen2.5-1.5B-Instruct 8 qwen2.5-1.5b-instruct-8bit
-quantize Qwen/Qwen2.5-0.5B-Instruct 4 qwen2.5-0.5b-instruct-4bit
 
 du -sh "$ROOT"/.models/*/

@@ -127,11 +127,14 @@ export function playChime(quiet: boolean) {
   tone(1175, 0.16, 1.1, v * 0.8);
 }
 
-// TODO(sound): speaks even when read-aloud is "off", and speak() cuts off the current line. See HANDOVER.md.
-export function playWoohoo(quiet: boolean) {
+/**
+ * The big cheer. The spoken "Woo hoo!" follows the read-aloud setting, and it
+ * never talks over a line the child is still hearing: then it is tones only.
+ */
+export function playWoohoo(quiet: boolean, voiceOn = true) {
   const v = quiet ? 0.05 : 0.14;
   [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.45, v, "triangle"));
-  void speak("Woo hoo!", { pitch: 1.7, rate: 1.05, quiet });
+  if (voiceOn && !busy()) void speak("Woo hoo!", { pitch: 1.7, rate: 1.05, quiet, naturalOnly: true });
 }
 
 // ---------- voice ----------
@@ -143,10 +146,11 @@ export type VoicePath = "natural" | "browser" | "mac" | "none";
  * warm one (Grandpa) that suits a cuddly animal; browsers that do not
  * expose them get the nearest voice, pitched up or down.
  */
-export type VoiceStyle = "child" | "bear" | "grownup";
+export type VoiceStyle = "child" | "bear" | "cartoon" | "grownup";
 const STYLE: Record<VoiceStyle, { names: RegExp; pitch: number; fallbackPitch: number; rate: number }> = {
   child: { names: /^Junior\b/i, pitch: 1.1, fallbackPitch: 1.6, rate: 0.95 },
   bear: { names: /^Grandpa\b/i, pitch: 0.9, fallbackPitch: 0.55, rate: 0.82 },
+  cartoon: { names: /^Junior\b/i, pitch: 1.2, fallbackPitch: 1.4, rate: 1 },
   grownup: { names: /^(Samantha|Karen|Daniel|Google US English)\b/i, pitch: 1.05, fallbackPitch: 1.05, rate: 0.9 },
 };
 let style: VoiceStyle = "child";
@@ -157,8 +161,12 @@ export function setVoiceStyle(s: VoiceStyle) {
   pickVoice();
 }
 
+/** True while any voice is playing. */
+let isSpeaking = false;
+
 /** Lets the character move its mouth while the voice is playing. */
 function talking(on: boolean) {
+  isSpeaking = on;
   try {
     window.dispatchEvent(new CustomEvent("tally:speaking", { detail: on }));
   } catch {
@@ -255,7 +263,11 @@ async function speakServer(text: string, quiet: boolean, rate: number, engine: "
     player.src = url;
     player.volume = volume * (quiet ? 0.45 : 1);
     player.onplay = () => talking(true);
-    player.onended = player.onpause = () => talking(false);
+    player.onpause = () => talking(false);
+    player.onended = () => {
+      talking(false);
+      lineEnded();
+    };
     await player.play();
     return engine === "natural" ? "natural" : "mac";
   } catch {
@@ -267,21 +279,100 @@ async function speakServer(text: string, quiet: boolean, rate: number, engine: "
  * Say a line. Resolves with the path that actually produced sound, so the
  * grown-ups page can say "the browser voice works" or "using the Mac voice".
  */
-export function speak(text: string, opts: { pitch?: number; rate?: number; quiet?: boolean } = {}): Promise<VoicePath> {
+type SpeakOpts = {
+  pitch?: number;
+  rate?: number;
+  quiet?: boolean;
+  interrupt?: boolean;
+  /** Only the child's voice, never a fallback voice (the cheer: tones alone are fine). */
+  naturalOnly?: boolean;
+};
+
+/** A line is "busy" from the moment it is asked for until it finishes playing. */
+let starting = false;
+/** The one line waiting for the current line to finish. A newer one replaces it. */
+let queued: { text: string; opts: SpeakOpts; resolve: (p: VoicePath) => void } | null = null;
+
+const busy = () => starting || isSpeaking;
+
+/** The line playing now has finished: play the one waiting, if any. */
+function lineEnded() {
+  starting = false;
+  const next = queued;
+  queued = null;
+  if (next) void speakNow(next.text, next.opts).then(next.resolve);
+}
+
+/**
+ * Say a line. By default it waits for the line already playing to finish, so
+ * nothing is cut off mid-sentence; only the newest waiting line is kept, so
+ * lines never pile up. `interrupt: true` is for the child's own taps (the
+ * speaker button, counting, tapping the friend), which should answer at once.
+ * Resolves with the path that produced sound, for the grown-ups voice test.
+ */
+export function speak(text: string, opts: SpeakOpts = {}): Promise<VoicePath> {
   if (typeof window === "undefined" || !text.trim() || volume === 0) return Promise.resolve("none");
+  if (!opts.interrupt && busy()) {
+    queued?.resolve("none");
+    return new Promise((resolve) => {
+      queued = { text, opts, resolve };
+    });
+  }
+  return speakNow(text, opts);
+}
+
+function speakNow(text: string, opts: SpeakOpts): Promise<VoicePath> {
   const quiet = !!opts.quiet;
   const rate = opts.rate ?? STYLE[style].rate;
   stopSpeaking();
-  return (async () => {
-    // TODO(sound): this await puts the browser voice outside the tap, which Safari drops. See HANDOVER.md.
-    // Best first: the natural on-device voice, when its server is running.
-    if (Date.now() > naturalDownUntil) {
-      const p = await speakServer(text, quiet, rate, "natural");
-      if (p === "natural") return p;
-    }
+  starting = true;
+  const settle = (p: Promise<VoicePath>) =>
+    p.then((path) => {
+      // Nothing played (or it failed): the queue must not wait on silence.
+      if (path === "none") lineEnded();
+      return path;
+    });
+  // Natural voice known to be down (or never seen): start the browser voice
+  // right now, inside the tap, which Safari requires.
+  if (!naturalUp || Date.now() < naturalDownUntil) {
+    if (opts.naturalOnly) return settle(Promise.resolve("none"));
+    if (preferMac || !hasSpeech()) return settle(speakServer(text, quiet, rate, "system"));
+    return settle(speakBrowser(text, quiet, rate, opts.pitch));
+  }
+  return settle((async () => {
+    // Best first: the natural child's voice, streamed as it is made. Its sound
+    // plays through Web Audio, which the first tap has already unlocked.
+    const p = await speakStream(text, quiet);
+    if (p === "natural") return p;
+    // The child's voice is running but this line was slow or failed. Switching
+    // to a different voice mid-session is jarring (and on a Mac it is the
+    // robotic system voice), so stay with silence: the words are on screen.
+    if (naturalUp) return "none";
+    if (opts.naturalOnly) return "none";
     if (preferMac || !hasSpeech()) return speakServer(text, quiet, rate, "system");
     return speakBrowser(text, quiet, rate, opts.pitch);
-  })();
+  })());
+}
+
+// ---------- is the natural voice running? ----------
+
+/** Checked at load, on the first tap and every 10 s, so a line never waits to discover it is down. */
+let naturalUp = false;
+
+async function checkNatural() {
+  try {
+    const r = await fetch("/api/speak", { method: "GET", cache: "no-store" });
+    naturalUp = r.ok;
+  } catch {
+    naturalUp = false;
+  }
+}
+if (typeof window !== "undefined") {
+  void checkNatural();
+  setInterval(checkNatural, 10_000);
+  // Check again on the first tap, so a check made while the server was still
+  // starting does not leave the app on a fallback voice.
+  window.addEventListener("pointerdown", () => void checkNatural(), { once: true, capture: true });
 }
 
 function speakBrowser(text: string, quiet: boolean, rate: number, pitch?: number): Promise<VoicePath> {
@@ -301,21 +392,21 @@ function speakBrowser(text: string, quiet: boolean, rate: number, pitch?: number
         talking(true);
         resolve("browser");
       };
-      u.onend = () => talking(false);
+      u.onend = () => {
+        talking(false);
+        lineEnded();
+      };
       u.onerror = (e) => {
         if (started || e.error === "interrupted" || e.error === "canceled") return;
-        // TODO(sound): permanent, and /api/speak "system" is 404 off a Mac, so speech stays silent. See HANDOVER.md.
-        preferMac = true;
-        void speakServer(text, quiet, rate, "system").then(resolve);
+        void trySystem(text, quiet, rate).then(resolve);
       };
       synth.speak(u);
       synth.resume();
       // No start within a second: this browser's voice is not working here.
       setTimeout(() => {
         if (started) return;
-        preferMac = true;
         synth.cancel();
-        void speakServer(text, quiet, rate, "system").then(resolve);
+        void trySystem(text, quiet, rate).then(resolve);
       }, 1200);
     };
     // Speak inside the tap when nothing is playing (Safari needs that); only
@@ -329,9 +420,33 @@ function speakBrowser(text: string, quiet: boolean, rate: number, pitch?: number
   });
 }
 
+/**
+ * The browser voice failed for this line: try the Mac's voice. Only once that
+ * has actually worked is it preferred for later lines; off a Mac it never
+ * works, so the browser voice keeps being retried instead of going silent.
+ */
+async function trySystem(text: string, quiet: boolean, rate: number): Promise<VoicePath> {
+  const p = await speakServer(text, quiet, rate, "system");
+  if (p === "mac") preferMac = true;
+  return p;
+}
+
 export function stopSpeaking() {
   clearTimeout(pending);
   talking(false);
+  starting = false;
+  queued?.resolve("none");
+  queued = null;
+  stream?.abort();
+  stream = null;
+  for (const src of playing) {
+    try {
+      src.stop();
+    } catch {
+      // already finished
+    }
+  }
+  playing = [];
   try {
     if (hasSpeech() && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) window.speechSynthesis.cancel();
   } catch {
@@ -344,4 +459,95 @@ export function stopSpeaking() {
   }
 }
 
-export const canSpeak = () => typeof window !== "undefined";
+// ---------- the natural voice, streamed ----------
+
+let stream: AbortController | null = null;
+let playing: AudioBufferSourceNode[] = [];
+/**
+ * How long to wait for the first sound of a line. Long enough to ride out the
+ * model sharing the GPU with Qwen; a line that still has not started is skipped.
+ */
+const FIRST_SOUND_MS = 6000;
+
+/**
+ * Play the child's voice as the server makes it: each piece of 16-bit audio
+ * is scheduled straight after the one before, so the line starts at the first
+ * piece (about half a second) instead of when the whole line is done.
+ */
+async function speakStream(text: string, quiet: boolean): Promise<VoicePath> {
+  const a = audio();
+  if (!a) return "none";
+  const ac = new AbortController();
+  stream = ac;
+  const gain = a.createGain();
+  gain.gain.value = volume * (quiet ? 0.45 : 1);
+  gain.connect(a.destination);
+
+  let started = false;
+  const tooSlow = setTimeout(() => {
+    if (!started) ac.abort();
+  }, FIRST_SOUND_MS);
+  try {
+    const r = await fetch("/api/speak", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text, engine: "stream" }),
+      signal: ac.signal,
+    });
+    if (!r.ok || !r.body) {
+      naturalUp = false;
+      return "none";
+    }
+    const reader = r.body.getReader();
+    let at = 0;
+    let carry: Uint8Array | null = null;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value?.length) continue;
+      // Samples are 2 bytes; a piece can end half-way through one.
+      let bytes: Uint8Array = value;
+      if (carry) {
+        const joined = new Uint8Array(carry.length + value.length);
+        joined.set(carry);
+        joined.set(value, carry.length);
+        bytes = joined;
+        carry = null;
+      }
+      if (bytes.length % 2) {
+        carry = bytes.slice(bytes.length - 1);
+        bytes = bytes.slice(0, bytes.length - 1);
+      }
+      const n = bytes.length / 2;
+      if (!n) continue;
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const buf = a.createBuffer(1, n, 24000);
+      const ch = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) ch[i] = view.getInt16(i * 2, true) / 32768;
+      const src = a.createBufferSource();
+      src.buffer = buf;
+      src.connect(gain);
+      if (!started) {
+        started = true;
+        at = a.currentTime + 0.05;
+        talking(true);
+      }
+      const when = Math.max(at, a.currentTime);
+      src.start(when);
+      at = when + buf.duration;
+      playing.push(src);
+    }
+    if (!started) return "none";
+    setTimeout(() => {
+      if (stream !== ac) return;
+      talking(false);
+      lineEnded();
+    }, Math.max(0, (at - a.currentTime) * 1000));
+    return "natural";
+  } catch {
+    // Aborted: too slow to start (the browser voice takes over), or a newer line.
+    return started ? "natural" : "none";
+  } finally {
+    clearTimeout(tooSlow);
+  }
+}

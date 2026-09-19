@@ -3,7 +3,7 @@
 // All caregiver-controlled, all previewed before they take effect.
 // ============================================================
 
-import type { BodyId, ChildProfile, MonoTone, ReadAloud } from "./types";
+import type { ChildProfile, MonoTone, ReadAloud } from "./types";
 
 export const MONO_TONES: { id: MonoTone; label: string; filter: string; swatch: string }[] = [
   { id: "grey", label: "Grey", filter: "grayscale(1)", swatch: "#9a9a9a" },
@@ -17,6 +17,14 @@ export const MONO_TONES: { id: MonoTone; label: string; filter: string; swatch: 
 export function sensoryFilter(p: Pick<ChildProfile, "colourSensitive" | "monoTone">): string | undefined {
   if (!p.colourSensitive) return undefined;
   return (MONO_TONES.find((t) => t.id === p.monoTone) ?? MONO_TONES[0]).filter;
+}
+
+/** Text size as a share of the normal size; applied to the whole page so every size scales. */
+export const TEXT_SCALE = { normal: "100%", large: "112.5%", xlarge: "125%" } as const;
+
+/** Classes for the reading-comfort settings. */
+export function readingClasses(p: Pick<ChildProfile, "wideSpacing" | "readableFont">): string {
+  return `${p.wideSpacing ? "wide-spacing" : ""} ${p.readableFont ? "readable-font" : ""}`.trim();
 }
 
 /** Old profiles have no read-aloud setting: young or non-speaking children get it on. */
@@ -55,15 +63,11 @@ export function backgroundOf(p: ChildProfile): "moving" | "still" | "plain" {
 /** Puzzles before the break. Five unless the grown-up chose three or eight. */
 export const sessionLengthOf = (p: ChildProfile): number => (p.sessionLength && [3, 5, 8].includes(p.sessionLength) ? p.sessionLength : 5);
 
-const ANIMALS: BodyId[] = ["bear", "pig", "puppy", "cat", "bunny", "dino"];
-
-/** The friend's voice: the grown-up's choice, else animals sound like a bear and everyone else like a child. */
-export function voiceStyleOf(p: ChildProfile, body: BodyId): "child" | "bear" | "grownup" {
-  return p.voiceStyle ?? (ANIMALS.includes(body) ? "bear" : "child");
+/**
+ * The friend's voice. One voice — a cheerful child's — for every character:
+ * the voice model then never has to design a voice per line, which is what
+ * made speech lag. (The parameters stay for the browser-voice fallback.)
+ */
+export function voiceStyleOf(): "child" {
+  return "child";
 }
-
-export const VOICE_OPTIONS = [
-  { id: "child", title: "A child", blurb: "A young, bright voice." },
-  { id: "bear", title: "A cuddly bear", blurb: "Deep, slow and warm." },
-  { id: "grownup", title: "A grown-up", blurb: "A calm, clear adult voice." },
-] as const;

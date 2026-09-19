@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Geist_Mono, Nunito } from "next/font/google";
+import { Atkinson_Hyperlegible, Fredoka, Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 
 // Fredoka for headings and numbers: round, friendly, unambiguous digits.
@@ -7,6 +7,8 @@ import "./globals.css";
 const display = Fredoka({ variable: "--font-display", subsets: ["latin"] });
 const body = Nunito({ variable: "--font-body", subsets: ["latin"] });
 const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Reading comfort: letters and digits that cannot be mistaken for each other (1 l I, 0 O).
+const readable = Atkinson_Hyperlegible({ variable: "--font-readable", subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
   title: "Tally Tales — maths stories, one child at a time",
@@ -23,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} ${readable.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

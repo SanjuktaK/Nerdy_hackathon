@@ -10,7 +10,7 @@ import { Scene } from "@/components/learn/Scene";
 import { Onboarding } from "@/components/learn/Onboarding";
 import { Session } from "@/components/learn/Session";
 import { initialModel, ruleReview } from "@/lib/learn/policy";
-import { backgroundOf, readAloudOf, sensoryFilter, sessionLengthOf, soundSettings, voiceStyleOf } from "@/lib/learn/sensory";
+import { TEXT_SCALE, backgroundOf, readAloudOf, readingClasses, sensoryFilter, sessionLengthOf, soundSettings, voiceStyleOf } from "@/lib/learn/sensory";
 import { setEffects, setVoiceStyle, setVolume, speak } from "@/lib/learn/sound";
 import { getLearn, getLearnServer, subscribeLearn, updateLearn } from "@/lib/learn/store";
 import { worldOf, type World } from "@/lib/learn/worlds";
@@ -27,9 +27,10 @@ export default function Home() {
     const s = soundSettings(prof);
     setVolume(s.volume);
     setEffects(s.effects);
-    const ch = state?.character;
-    setVoiceStyle(voiceStyleOf(prof, ch ? worldOf(ch).body : "bear"));
-  }, [prof, state?.character]);
+    // Text size scales everything, so the whole page grows together.
+    document.documentElement.style.fontSize = TEXT_SCALE[prof.textSize ?? "normal"];
+    setVoiceStyle(voiceStyleOf());
+  }, [prof]);
 
   if (!state) return <main className="min-h-screen" aria-busy="true" />;
 
@@ -48,7 +49,7 @@ export default function Home() {
 
   return (
     <div
-      className={`app-root ${profile.reduceMotion ? "reduce-motion" : ""}`}
+      className={`app-root ${profile.reduceMotion ? "reduce-motion" : ""} ${readingClasses(profile)}`}
       style={{ ...skyVars(world), filter: sensoryFilter(profile) }}
     >
       <Scene world={world} mode={backgroundOf(profile)} />
@@ -93,7 +94,7 @@ export default function Home() {
                 size={230}
                 onSay={(l) => {
                   setLine(l);
-                  if (readAloudOf(profile) === "auto") speak(l, { quiet: profile.soundSensitive });
+                  if (readAloudOf(profile) === "auto") speak(l, { quiet: profile.soundSensitive, interrupt: true });
                 }}
               />
               <Jar world={world} filled={saved % 5} of={5} total={saved} label={world.jar} size={120} />

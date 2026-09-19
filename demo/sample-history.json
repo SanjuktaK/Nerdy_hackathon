@@ -1,0 +1,1190 @@
+{
+  "app": "tally-tales",
+  "sample": true,
+  "exportedAt": "2026-09-19T04:20:53.641Z",
+  "profile": {
+    "name": "Adi",
+    "age": 6,
+    "grade": "G1",
+    "support": "some",
+    "communication": "sentences",
+    "colourSensitive": false,
+    "soundSensitive": false,
+    "likesStories": true,
+    "favouriteShow": "Shinchan",
+    "buddy": "kid",
+    "buddyColour": "#e0564a",
+    "world": "custom",
+    "cheer": "woohoo",
+    "adaptConsent": true,
+    "readAloud": "auto",
+    "createdAt": 1788640200000,
+    "goals": {
+      "add20": "Adds within 20, crossing ten, with 80% accuracy",
+      "sub20": "Takes away within 20 using ten as a stepping stone"
+    }
+  },
+  "character": {
+    "name": "Shinchan",
+    "world": "custom",
+    "body": "#e0564a",
+    "accent": "#e0a526",
+    "accessory": "cap",
+    "catchphrase": "We count together.",
+    "treasure": "cookie",
+    "source": "model",
+    "skin": {
+      "id": "custom",
+      "label": "Shinchan",
+      "hero": "Shinchan",
+      "heroKind": "a cheerful young boy",
+      "item": {
+        "one": "cookie",
+        "many": "cookies"
+      },
+      "treasure": "cookie",
+      "jar": "cookie jar",
+      "takeVerb": "eats",
+      "bead": "round",
+      "body": "kid",
+      "icon": "cookie",
+      "colours": {
+        "body": "#e0564a",
+        "accent": "#e0a526",
+        "bead": "#e0564a",
+        "beadEdge": "#923830",
+        "tens": "#e0a526",
+        "tensEdge": "#926b19",
+        "hundreds": "#a87c1d",
+        "hundredsEdge": "#6d5113",
+        "fill": "#e0564a",
+        "sky": "#fbe7e6",
+        "ground": "#f6e4be"
+      }
+    }
+  },
+  "model": {
+    "reps": {
+      "add20": "A",
+      "sub20": "A"
+    },
+    "levels": {
+      "add20": 2,
+      "sub20": 4,
+      "placeValue100": 3,
+      "timeHour": 3
+    },
+    "strengths": [
+      "add20"
+    ],
+    "workingOn": [
+      "sub20"
+    ],
+    "note": "Adi solved 3 of 5 puzzles on the first try. Comfortable today: adding within 20. Next to practise: taking away within 20.",
+    "sessions": 10,
+    "updatedAt": 1789764798993,
+    "source": "rules"
+  },
+  "sessions": [
+    {
+      "id": "sample-1",
+      "startedAt": 1788294600000,
+      "endedAt": 1788294742938,
+      "attempts": [
+        {
+          "questionId": "s0-0-add20-2-C",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "19",
+          "expected": "19",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 8993,
+          "at": 1788294628993
+        },
+        {
+          "questionId": "s0-1-add20-2-R",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "19",
+          "expected": "19",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 7689,
+          "at": 1788294656682
+        },
+        {
+          "questionId": "s0-2-add20-2-A",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "14",
+          "expected": "14",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 6286,
+          "at": 1788294682968
+        },
+        {
+          "questionId": "s0-3-sub20-2-C",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "10",
+          "expected": "10",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 6495,
+          "at": 1788294709463
+        },
+        {
+          "questionId": "s0-4-sub20-2-R",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "15",
+          "expected": "15",
+          "mistake": "wrong-operation",
+          "tries": 2,
+          "rep": "R",
+          "ms": 13475,
+          "at": 1788294742938
+        }
+      ],
+      "plans": [
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "warm up",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "the same, as dots",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "the same, as numbers only",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "the same, as dots",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        }
+      ]
+    },
+    {
+      "id": "sample-2",
+      "startedAt": 1788467940000,
+      "endedAt": 1788468067421,
+      "attempts": [
+        {
+          "questionId": "s1-0-sub20-2-R",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "10",
+          "expected": "10",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 4483,
+          "at": 1788467964483
+        },
+        {
+          "questionId": "s1-1-placeValue100-2-C",
+          "skill": "placeValue100",
+          "level": 2,
+          "correct": true,
+          "given": "16",
+          "expected": "16",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 5224,
+          "at": 1788467989707
+        },
+        {
+          "questionId": "s1-2-placeValue100-3-C",
+          "skill": "placeValue100",
+          "level": 3,
+          "correct": true,
+          "given": "39",
+          "expected": "39",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "C",
+          "ms": 5938,
+          "at": 1788468015645
+        },
+        {
+          "questionId": "s1-3-placeValue100-3-C",
+          "skill": "placeValue100",
+          "level": 3,
+          "correct": true,
+          "given": "65",
+          "expected": "65",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "C",
+          "ms": 7170,
+          "at": 1788468042815
+        },
+        {
+          "questionId": "s1-4-timeHour-2-C",
+          "skill": "timeHour",
+          "level": 2,
+          "correct": true,
+          "given": "9",
+          "expected": "9",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 4606,
+          "at": 1788468067421
+        }
+      ],
+      "plans": [
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 3,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        }
+      ]
+    },
+    {
+      "id": "sample-3",
+      "startedAt": 1788555600000,
+      "endedAt": 1788555738093,
+      "attempts": [
+        {
+          "questionId": "s2-0-timeHour-3-C",
+          "skill": "timeHour",
+          "level": 3,
+          "correct": false,
+          "given": "1",
+          "expected": "12",
+          "mistake": "guess",
+          "tries": 2,
+          "rep": "C",
+          "ms": 7893,
+          "at": 1788555627893
+        },
+        {
+          "questionId": "s2-1-timeHour-2-C",
+          "skill": "timeHour",
+          "level": 2,
+          "correct": true,
+          "given": "3",
+          "expected": "3",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 4090,
+          "at": 1788555651983
+        },
+        {
+          "questionId": "s2-2-add20-2-A",
+          "skill": "add20",
+          "level": 2,
+          "correct": false,
+          "given": "18",
+          "expected": "19",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 14549,
+          "at": 1788555686532
+        },
+        {
+          "questionId": "s2-3-add20-2-R",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "19",
+          "expected": "19",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 5001,
+          "at": 1788555711533
+        },
+        {
+          "questionId": "s2-4-add20-2-A",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "18",
+          "expected": "18",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 6560,
+          "at": 1788555738093
+        }
+      ],
+      "plans": [
+        {
+          "skill": "timeHour",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 2,
+          "focus": "an answer we could not explain",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "back to dots",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "the same, as numbers only",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        }
+      ]
+    },
+    {
+      "id": "sample-4",
+      "startedAt": 1788726840000,
+      "endedAt": 1788726973244,
+      "attempts": [
+        {
+          "questionId": "s3-0-sub20-2-R",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "12",
+          "expected": "12",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "R",
+          "ms": 5910,
+          "at": 1788726865910
+        },
+        {
+          "questionId": "s3-1-sub20-2-R",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "11",
+          "expected": "11",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 8035,
+          "at": 1788726893945
+        },
+        {
+          "questionId": "s3-2-sub20-2-A",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "16",
+          "expected": "16",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 6534,
+          "at": 1788726920479
+        },
+        {
+          "questionId": "s3-3-add20-1-A",
+          "skill": "add20",
+          "level": 1,
+          "correct": true,
+          "given": "7",
+          "expected": "7",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 4890,
+          "at": 1788726945369
+        },
+        {
+          "questionId": "s3-4-add20-2-A",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "17",
+          "expected": "17",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 7875,
+          "at": 1788726973244
+        }
+      ],
+      "plans": [
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "the same, as numbers only",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "add20",
+          "level": 1,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        }
+      ]
+    },
+    {
+      "id": "sample-5",
+      "startedAt": 1788899940000,
+      "endedAt": 1788900041514,
+      "attempts": [
+        {
+          "questionId": "s4-0-add20-3-A",
+          "skill": "add20",
+          "level": 3,
+          "correct": true,
+          "given": "13",
+          "expected": "13",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 13704,
+          "at": 1788899973704
+        },
+        {
+          "questionId": "s4-1-placeValue100-3-C",
+          "skill": "placeValue100",
+          "level": 3,
+          "correct": false,
+          "given": "46",
+          "expected": "64",
+          "mistake": "digits-swapped",
+          "tries": 2,
+          "rep": "C",
+          "ms": 14989,
+          "at": 1788900008693
+        },
+        {
+          "questionId": "s4-2-placeValue100-2-C",
+          "skill": "placeValue100",
+          "level": 2,
+          "correct": false,
+          "given": "62",
+          "expected": "26",
+          "mistake": "digits-swapped",
+          "tries": 2,
+          "rep": "C",
+          "ms": 12821,
+          "at": 1788900041514
+        }
+      ],
+      "plans": [
+        {
+          "skill": "add20",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 3,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 2,
+          "focus": "swapped the tens and ones digits",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        }
+      ]
+    },
+    {
+      "id": "sample-6",
+      "startedAt": 1789072440000,
+      "endedAt": 1789072580344,
+      "attempts": [
+        {
+          "questionId": "s5-0-placeValue100-1-C",
+          "skill": "placeValue100",
+          "level": 1,
+          "correct": true,
+          "given": "10",
+          "expected": "10",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 5447,
+          "at": 1789072465447
+        },
+        {
+          "questionId": "s5-1-timeHour-2-C",
+          "skill": "timeHour",
+          "level": 2,
+          "correct": true,
+          "given": "12",
+          "expected": "12",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 8508,
+          "at": 1789072493955
+        },
+        {
+          "questionId": "s5-2-timeHour-3-C",
+          "skill": "timeHour",
+          "level": 3,
+          "correct": true,
+          "given": "1",
+          "expected": "1",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 7309,
+          "at": 1789072521264
+        },
+        {
+          "questionId": "s5-3-timeHour-4-C",
+          "skill": "timeHour",
+          "level": 4,
+          "correct": true,
+          "given": "2",
+          "expected": "2",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 5890,
+          "at": 1789072547154
+        },
+        {
+          "questionId": "s5-4-add20-3-A",
+          "skill": "add20",
+          "level": 3,
+          "correct": true,
+          "given": "12",
+          "expected": "12",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 13190,
+          "at": 1789072580344
+        }
+      ],
+      "plans": [
+        {
+          "skill": "placeValue100",
+          "level": 1,
+          "focus": "swapped the tens and ones digits",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 4,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "add20",
+          "level": 3,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        }
+      ]
+    },
+    {
+      "id": "sample-7",
+      "startedAt": 1789247280000,
+      "endedAt": 1789247421605,
+      "attempts": [
+        {
+          "questionId": "s6-0-add20-3-A",
+          "skill": "add20",
+          "level": 3,
+          "correct": false,
+          "given": "3",
+          "expected": "13",
+          "mistake": "regrouping",
+          "tries": 2,
+          "rep": "A",
+          "ms": 7654,
+          "at": 1789247307654
+        },
+        {
+          "questionId": "s6-1-add20-3-R",
+          "skill": "add20",
+          "level": 3,
+          "correct": true,
+          "given": "12",
+          "expected": "12",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 4107,
+          "at": 1789247331761
+        },
+        {
+          "questionId": "s6-2-sub20-2-A",
+          "skill": "sub20",
+          "level": 2,
+          "correct": true,
+          "given": "11",
+          "expected": "11",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 9813,
+          "at": 1789247361574
+        },
+        {
+          "questionId": "s6-3-sub20-3-A",
+          "skill": "sub20",
+          "level": 3,
+          "correct": true,
+          "given": "3",
+          "expected": "3",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 5872,
+          "at": 1789247387446
+        },
+        {
+          "questionId": "s6-4-sub20-4-A",
+          "skill": "sub20",
+          "level": 4,
+          "correct": true,
+          "given": "6",
+          "expected": "6",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 14159,
+          "at": 1789247421605
+        }
+      ],
+      "plans": [
+        {
+          "skill": "add20",
+          "level": 3,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "add20",
+          "level": 3,
+          "focus": "back to dots",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "sub20",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 4,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        }
+      ]
+    },
+    {
+      "id": "sample-8",
+      "startedAt": 1789418940000,
+      "endedAt": 1789419074348,
+      "attempts": [
+        {
+          "questionId": "s7-0-add20-2-R",
+          "skill": "add20",
+          "level": 2,
+          "correct": false,
+          "given": "21",
+          "expected": "19",
+          "mistake": "guess",
+          "tries": 2,
+          "rep": "R",
+          "ms": 12147,
+          "at": 1789418972147,
+          "hypothesis": "Maybe the child counted one group twice."
+        },
+        {
+          "questionId": "s7-1-add20-2-C",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "18",
+          "expected": "18",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 4015,
+          "at": 1789418996162
+        },
+        {
+          "questionId": "s7-2-add20-2-R",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "14",
+          "expected": "14",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 8726,
+          "at": 1789419024888
+        },
+        {
+          "questionId": "s7-3-placeValue100-1-C",
+          "skill": "placeValue100",
+          "level": 1,
+          "correct": true,
+          "given": "17",
+          "expected": "17",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 4220,
+          "at": 1789419049108
+        },
+        {
+          "questionId": "s7-4-placeValue100-2-C",
+          "skill": "placeValue100",
+          "level": 2,
+          "correct": true,
+          "given": "25",
+          "expected": "25",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 5240,
+          "at": 1789419074348
+        }
+      ],
+      "plans": [
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "back to pictures",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "the same, as dots",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 1,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "placeValue100",
+          "level": 2,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        }
+      ]
+    },
+    {
+      "id": "sample-9",
+      "startedAt": 1789591500000,
+      "endedAt": 1789591636156,
+      "attempts": [
+        {
+          "questionId": "s8-0-placeValue100-3-C",
+          "skill": "placeValue100",
+          "level": 3,
+          "correct": true,
+          "given": "99",
+          "expected": "99",
+          "mistake": "none",
+          "tries": 2,
+          "rep": "C",
+          "ms": 5021,
+          "at": 1789591525021
+        },
+        {
+          "questionId": "s8-1-timeHour-4-C",
+          "skill": "timeHour",
+          "level": 4,
+          "correct": true,
+          "given": "7",
+          "expected": "7",
+          "mistake": "guess",
+          "tries": 2,
+          "rep": "C",
+          "ms": 7684,
+          "at": 1789591552705
+        },
+        {
+          "questionId": "s8-2-timeHour-4-C",
+          "skill": "timeHour",
+          "level": 4,
+          "correct": false,
+          "given": "5",
+          "expected": "4",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "C",
+          "ms": 8232,
+          "at": 1789591580937
+        },
+        {
+          "questionId": "s8-3-timeHour-3-C",
+          "skill": "timeHour",
+          "level": 3,
+          "correct": true,
+          "given": "6",
+          "expected": "6",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "C",
+          "ms": 5896,
+          "at": 1789591606833
+        },
+        {
+          "questionId": "s8-4-add20-1-R",
+          "skill": "add20",
+          "level": 1,
+          "correct": true,
+          "given": "10",
+          "expected": "10",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "R",
+          "ms": 9323,
+          "at": 1789591636156
+        }
+      ],
+      "plans": [
+        {
+          "skill": "placeValue100",
+          "level": 3,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 4,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 4,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "timeHour",
+          "level": 3,
+          "focus": "counted one too many or one too few",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "C"
+        },
+        {
+          "skill": "add20",
+          "level": 1,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "R"
+        }
+      ]
+    },
+    {
+      "id": "sample-10",
+      "startedAt": 1789764660000,
+      "endedAt": 1789764798993,
+      "attempts": [
+        {
+          "questionId": "s9-0-add20-1-A",
+          "skill": "add20",
+          "level": 1,
+          "correct": true,
+          "given": "6",
+          "expected": "6",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 9429,
+          "at": 1789764689429
+        },
+        {
+          "questionId": "s9-1-add20-2-A",
+          "skill": "add20",
+          "level": 2,
+          "correct": true,
+          "given": "19",
+          "expected": "19",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 6529,
+          "at": 1789764715958
+        },
+        {
+          "questionId": "s9-2-sub20-4-A",
+          "skill": "sub20",
+          "level": 4,
+          "correct": true,
+          "given": "8",
+          "expected": "8",
+          "mistake": "off-by-one",
+          "tries": 2,
+          "rep": "A",
+          "ms": 8961,
+          "at": 1789764744919
+        },
+        {
+          "questionId": "s9-3-sub20-4-A",
+          "skill": "sub20",
+          "level": 4,
+          "correct": true,
+          "given": "7",
+          "expected": "7",
+          "mistake": "none",
+          "tries": 1,
+          "rep": "A",
+          "ms": 8296,
+          "at": 1789764773215
+        },
+        {
+          "questionId": "s9-4-sub20-5-A",
+          "skill": "sub20",
+          "level": 5,
+          "correct": false,
+          "given": "5",
+          "expected": "5",
+          "mistake": "none",
+          "tries": 2,
+          "rep": "A",
+          "ms": 5778,
+          "at": 1789764798993
+        }
+      ],
+      "plans": [
+        {
+          "skill": "add20",
+          "level": 1,
+          "focus": "the same, as numbers only",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "add20",
+          "level": 2,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 4,
+          "focus": "something new",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 4,
+          "focus": "one more like that",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        },
+        {
+          "skill": "sub20",
+          "level": 5,
+          "focus": "a little harder",
+          "source": "rules",
+          "reason": "Chosen from the safe options menu.",
+          "rep": "A"
+        }
+      ]
+    }
+  ],
+  "seenNotes": []
+}
